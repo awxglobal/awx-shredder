@@ -1,0 +1,37 @@
+User-agent: *
+Allow: /
+
+# AI crawlers — explicitly welcome
+User-agent: GPTBot
+Allow: /
+
+User-agent: ClaudeBot
+Allow: /
+
+User-agent: PerplexityBot
+Allow: /
+
+User-agent: GoogleOther
+Allow: /
+
+User-agent: Applebot
+Allow: /
+
+User-agent: YouBot
+Allow: /
+
+User-agent: anthropic-ai
+Allow: /
+
+User-agent: cohere-ai
+Allow: /
+
+# Structured data and agent discovery files
+# These are the most important pages for AI agents:
+Sitemap: https://awx-shredder.fly.dev/sitemap.xml
+
+# Agent-readable resources
+# /llms.txt               - LLM-optimised product overview
+# /.well-known/ai-agent.json  - product capability manifest
+# /api/v1/waitlist-info   - live waitlist status (JSON)
+# /waitlist               - waitlist signup page

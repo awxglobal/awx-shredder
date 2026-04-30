@@ -1,0 +1,370 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AWX Shredder — Stop AI Agents From Burning Your Budget</title>
+  <meta name="description" content="AWX Shredder enforces per-agent daily spend limits on your OpenAI calls. Drop-in proxy, real-time dashboard, zero config." />
+  <script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "SoftwareApplication",
+  "name": "Aegis",
+  "url": "https://aegis.ai",
+  "description": "Budget enforcement and spend control for AI agents. Sits between your AI agent and OpenAI or Anthropic — enforces daily budgets, blocks overspend before the API call is made, and alerts operators via Slack at 50%, 80%, and 100% of budget.",
+  "applicationCategory": "DeveloperApplication",
+  "applicationSubCategory": "AI Infrastructure",
+  "operatingSystem": "Any",
+  "offers": {
+    "@type": "AggregateOffer",
+    "lowPrice": "0",
+    "highPrice": "2000",
+    "priceCurrency": "USD",
+    "offerCount": "5"
+  },
+  "audience": {
+    "@type": "Audience",
+    "audienceType": "AI developers, startup founders, engineers running AI agents in production"
+  },
+  "featureList": [
+    "Hard budget caps enforced before API call reaches OpenAI",
+    "Slack alerts at 50%, 80%, and 100% of daily budget",
+    "OpenAI and Anthropic proxy support",
+    "Per-agent spend tracking and audit log",
+    "Real-time dashboard",
+    "Self-serve signup"
+  ],
+  "provider": {
+    "@type": "Organization",
+    "name": "Aegis",
+    "url": "https://aegis.ai"
+  }
+}
+</script>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <style>
+    * { font-family: 'Inter', sans-serif; }
+    @keyframes fadeUp { from { opacity:0; transform:translateY(18px); } to { opacity:1; transform:none; } }
+    .fade-up { animation: fadeUp 0.55s ease both; }
+    .delay-1 { animation-delay: 0.1s; }
+    .delay-2 { animation-delay: 0.22s; }
+    .delay-3 { animation-delay: 0.34s; }
+    .delay-4 { animation-delay: 0.46s; }
+    /* Glow on hero badge */
+    .badge-glow { box-shadow: 0 0 0 1px rgba(52,211,153,0.35), 0 0 16px rgba(52,211,153,0.15); }
+    /* Gradient text */
+    .grad { background: linear-gradient(135deg, #ffffff 0%, #94a3b8 100%); -webkit-background-clip:text; -webkit-text-fill-color:transparent; background-clip:text; }
+    /* Video placeholder shimmer */
+    @keyframes shimmer { 0%{background-position:-600px 0} 100%{background-position:600px 0} }
+    .shimmer { background:linear-gradient(90deg,#1e293b 25%,#334155 50%,#1e293b 75%); background-size:1200px 100%; animation:shimmer 2s infinite; }
+    /* Feature card hover */
+    .feat-card { transition: transform 0.2s ease, box-shadow 0.2s ease; }
+    .feat-card:hover { transform: translateY(-3px); box-shadow: 0 12px 40px rgba(0,0,0,0.4); }
+    /* CTA button pulse */
+    @keyframes pulse-ring { 0%{box-shadow:0 0 0 0 rgba(52,211,153,0.5)} 70%{box-shadow:0 0 0 10px rgba(52,211,153,0)} 100%{box-shadow:0 0 0 0 rgba(52,211,153,0)} }
+    .btn-pulse:focus { animation: pulse-ring 1.2s ease; }
+    /* Terminal blink */
+    @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0} }
+    .cursor { animation: blink 1s step-end infinite; }
+    /* Video container aspect ratio */
+    .video-wrap { position:relative; padding-bottom:56.25%; height:0; }
+    .video-wrap iframe, .video-wrap video { position:absolute; top:0; left:0; width:100%; height:100%; border:0; border-radius:inherit; }
+  </style>
+</head>
+<body class="bg-slate-950 text-white">
+
+<!-- ── Nav ─────────────────────────────────────────────────────────────── -->
+<nav class="fixed top-0 left-0 right-0 z-50 flex items-center justify-between px-6 py-4 bg-slate-950/80 backdrop-blur-md border-b border-white/5">
+  <div class="flex items-center gap-2.5">
+    <div class="w-8 h-8 rounded-lg bg-emerald-500 flex items-center justify-center shadow-lg shadow-emerald-500/30 shrink-0">
+      <svg class="w-4 h-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75m-3-7.036A11.959 11.959 0 013.598 6 11.99 11.99 0 003 9.749c0 5.592 3.824 10.29 9 11.623 5.176-1.332 9-6.03 9-11.622 0-1.31-.21-2.571-.598-3.751h-.152c-3.196 0-6.1-1.248-8.25-3.285z"/>
+      </svg>
+    </div>
+    <span class="font-bold text-white text-[15px] tracking-tight">AWX Shredder</span>
+  </div>
+  <div class="flex items-center gap-4">
+    <a href="/app" class="text-slate-400 hover:text-white text-[13px] transition-colors">Sign in</a>
+    <a href="#waitlist"
+       class="px-4 py-2 bg-emerald-500 hover:bg-emerald-400 text-white text-[13px] font-semibold rounded-lg transition-colors shadow-lg shadow-emerald-500/20">
+      Join waitlist
+    </a>
+  </div>
+</nav>
+
+<!-- ── Hero ─────────────────────────────────────────────────────────────── -->
+<section class="pt-32 pb-20 px-6 text-center relative overflow-hidden">
+  <!-- Background grid -->
+  <div class="absolute inset-0 pointer-events-none"
+       style="background-image:linear-gradient(rgba(255,255,255,0.03) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,0.03) 1px,transparent 1px);background-size:40px 40px"></div>
+  <!-- Glow blob -->
+  <div class="absolute top-24 left-1/2 -translate-x-1/2 w-[600px] h-[300px] rounded-full bg-emerald-500/10 blur-[80px] pointer-events-none"></div>
+
+  <div class="relative max-w-3xl mx-auto">
+    <div class="fade-up inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-emerald-500/10 border border-emerald-500/25 badge-glow mb-6">
+      <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse shrink-0"></span>
+      <span class="text-emerald-400 text-[12px] font-semibold tracking-wide">Now in beta — join the waitlist</span>
+    </div>
+
+    <h1 class="fade-up delay-1 text-[52px] leading-[1.08] font-extrabold tracking-tight mb-5">
+      <span class="grad">Stop AI agents from<br>burning your budget.</span>
+    </h1>
+
+    <p class="fade-up delay-2 text-slate-400 text-[18px] leading-relaxed max-w-xl mx-auto mb-10">
+      AWX Shredder sits between your agents and OpenAI.
+      Set daily spend limits per agent — we block, throttle, and alert before costs spiral.
+    </p>
+
+    <!-- Waitlist form (hero) -->
+    <form id="hero-form" class="fade-up delay-3 flex flex-col sm:flex-row gap-3 justify-center max-w-md mx-auto mb-6">
+      <input id="hero-email" type="email" required placeholder="you@company.com"
+        class="flex-1 bg-slate-800 border border-slate-700 text-white placeholder-slate-500
+               text-[14px] px-4 py-3 rounded-xl outline-none focus:border-emerald-500 focus:ring-1
+               focus:ring-emerald-500/50 transition-all" />
+      <button type="submit" id="hero-btn"
+        class="btn-pulse shrink-0 bg-emerald-500 hover:bg-emerald-400 active:scale-95
+               text-white font-semibold text-[14px] px-5 py-3 rounded-xl transition-all
+               shadow-lg shadow-emerald-500/25 whitespace-nowrap">
+        Get early access
+      </button>
+    </form>
+    <p id="hero-msg" class="fade-up delay-4 text-[12px] text-slate-500">No credit card. No spam. Cancel anytime.</p>
+  </div>
+</section>
+
+<!-- ── Demo video ────────────────────────────────────────────────────────── -->
+<section class="px-6 pb-20">
+  <div class="max-w-4xl mx-auto">
+    <div class="rounded-2xl overflow-hidden border border-white/10 shadow-2xl shadow-black/60 bg-slate-900">
+      <!-- Title bar chrome -->
+      <div class="flex items-center gap-2 px-4 py-3 bg-slate-800/60 border-b border-white/5">
+        <span class="w-3 h-3 rounded-full bg-red-400/70"></span>
+        <span class="w-3 h-3 rounded-full bg-amber-400/70"></span>
+        <span class="w-3 h-3 rounded-full bg-emerald-400/70"></span>
+        <span class="ml-3 text-slate-500 text-[12px] font-mono">awx-shredder.fly.dev</span>
+      </div>
+
+      <!-- Video -->
+      <div id="video-container" class="video-wrap bg-slate-900">
+        <video src="/demo.mp4" autoplay muted loop playsinline
+               style="border-radius:0 0 1rem 1rem; object-fit:cover;">
+        </video>
+      </div>
+    </div>
+    <p class="text-center text-slate-600 text-[12px] mt-3">15-second overview · no audio needed</p>
+  </div>
+</section>
+
+<!-- ── How it works ──────────────────────────────────────────────────────── -->
+<section class="px-6 pb-20 max-w-5xl mx-auto">
+  <h2 class="text-center text-[11px] text-slate-500 uppercase tracking-widest font-semibold mb-12">How it works</h2>
+
+  <div class="grid md:grid-cols-3 gap-6">
+    <div class="feat-card bg-slate-900 border border-white/8 rounded-2xl p-6">
+      <div class="w-10 h-10 rounded-xl bg-emerald-500/15 border border-emerald-500/25 flex items-center justify-center mb-4">
+        <span class="text-emerald-400 text-[18px] font-bold">1</span>
+      </div>
+      <h3 class="font-semibold text-white text-[15px] mb-2">Point your agent at the proxy</h3>
+      <p class="text-slate-400 text-[13px] leading-relaxed">
+        Replace <code class="text-emerald-400 bg-slate-800 px-1 rounded text-[12px]">api.openai.com</code> with
+        your AWX Shredder URL. One line of config.
+      </p>
+    </div>
+    <div class="feat-card bg-slate-900 border border-white/8 rounded-2xl p-6">
+      <div class="w-10 h-10 rounded-xl bg-blue-500/15 border border-blue-500/25 flex items-center justify-center mb-4">
+        <span class="text-blue-400 text-[18px] font-bold">2</span>
+      </div>
+      <h3 class="font-semibold text-white text-[15px] mb-2">Set a daily budget per agent</h3>
+      <p class="text-slate-400 text-[13px] leading-relaxed">
+        Each agent gets its own daily spend cap. Requests that would exceed the limit are blocked before they hit OpenAI.
+      </p>
+    </div>
+    <div class="feat-card bg-slate-900 border border-white/8 rounded-2xl p-6">
+      <div class="w-10 h-10 rounded-xl bg-violet-500/15 border border-violet-500/25 flex items-center justify-center mb-4">
+        <span class="text-violet-400 text-[18px] font-bold">3</span>
+      </div>
+      <h3 class="font-semibold text-white text-[15px] mb-2">Watch it live on the dashboard</h3>
+      <p class="text-slate-400 text-[13px] leading-relaxed">
+        Real-time spend tracking, per-agent status, and a live event feed. Know exactly where every dollar goes.
+      </p>
+    </div>
+  </div>
+</section>
+
+<!-- ── Terminal demo ─────────────────────────────────────────────────────── -->
+<section class="px-6 pb-20 max-w-2xl mx-auto">
+  <div class="bg-slate-900 rounded-2xl border border-white/8 overflow-hidden shadow-xl">
+    <div class="flex items-center gap-2 px-4 py-3 bg-slate-800/50 border-b border-white/5">
+      <span class="w-2.5 h-2.5 rounded-full bg-red-400/60"></span>
+      <span class="w-2.5 h-2.5 rounded-full bg-amber-400/60"></span>
+      <span class="w-2.5 h-2.5 rounded-full bg-emerald-400/60"></span>
+      <span class="ml-2 text-slate-500 text-[11px]">before / after</span>
+    </div>
+    <div class="p-5 font-mono text-[13px] space-y-5">
+      <!-- Before -->
+      <div>
+        <div class="text-slate-600 text-[10px] uppercase tracking-widest mb-2">Before</div>
+        <div><span class="text-slate-500">base_url = </span><span class="text-red-400 line-through">"https://api.openai.com/v1"</span></div>
+      </div>
+      <!-- After -->
+      <div>
+        <div class="text-slate-600 text-[10px] uppercase tracking-widest mb-2">After (one change)</div>
+        <div><span class="text-slate-500">base_url = </span><span class="text-emerald-400">"https://awx-shredder.fly.dev/proxy/openai/v1"</span></div>
+        <div class="mt-2"><span class="text-slate-500">api_key  = </span><span class="text-amber-400">"awx_live_..."</span><span class="text-slate-600">  # your AWX key</span></div>
+        <div class="mt-1"><span class="text-slate-500">headers  = </span><span class="text-slate-300">{"x-agent-id": </span><span class="text-violet-400">"my-agent"</span><span class="text-slate-300">}</span></div>
+      </div>
+      <div class="border-t border-white/5 pt-4 text-slate-500 text-[12px]">
+        That's it. Your agent runs exactly the same — except now it can't overspend.<span class="cursor">█</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ── Feature strips ────────────────────────────────────────────────────── -->
+<section class="px-6 pb-20 max-w-5xl mx-auto">
+  <div class="grid md:grid-cols-2 gap-4">
+    <div class="bg-slate-900/60 border border-white/6 rounded-2xl p-6 flex gap-4">
+      <div class="w-9 h-9 rounded-lg bg-emerald-500/15 flex items-center justify-center shrink-0 mt-0.5">
+        <svg class="w-5 h-5 text-emerald-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m0-10.036A11.959 11.959 0 013.598 6 11.99 11.99 0 003 9.75c0 5.592 3.824 10.29 9 11.623 5.176-1.332 9-6.03 9-11.622 0-1.31-.21-2.571-.598-3.751h-.152c-3.196 0-6.1-1.248-8.25-3.285z"/>
+        </svg>
+      </div>
+      <div>
+        <div class="font-semibold text-white text-[14px] mb-1">Hard budget enforcement</div>
+        <div class="text-slate-400 text-[13px] leading-relaxed">Requests that would exceed a daily cap are blocked at the proxy — they never reach OpenAI and never cost you a cent.</div>
+      </div>
+    </div>
+    <div class="bg-slate-900/60 border border-white/6 rounded-2xl p-6 flex gap-4">
+      <div class="w-9 h-9 rounded-lg bg-blue-500/15 flex items-center justify-center shrink-0 mt-0.5">
+        <svg class="w-5 h-5 text-blue-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 13.5l10.5-11.25L12 10.5h8.25L9.75 21.75 12 13.5H3.75z"/>
+        </svg>
+      </div>
+      <div>
+        <div class="font-semibold text-white text-[14px] mb-1">Live event stream</div>
+        <div class="text-slate-400 text-[13px] leading-relaxed">Every request streamed in real time. See token counts, model, cost, and approval status as they happen — no refresh needed.</div>
+      </div>
+    </div>
+    <div class="bg-slate-900/60 border border-white/6 rounded-2xl p-6 flex gap-4">
+      <div class="w-9 h-9 rounded-lg bg-amber-500/15 flex items-center justify-center shrink-0 mt-0.5">
+        <svg class="w-5 h-5 text-amber-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z"/>
+        </svg>
+      </div>
+      <div>
+        <div class="font-semibold text-white text-[14px] mb-1">Multi-agent, multi-org</div>
+        <div class="text-slate-400 text-[13px] leading-relaxed">Each organisation gets isolated dashboards, API keys, and budgets. Onboard a new team in 60 seconds — no ops required.</div>
+      </div>
+    </div>
+    <div class="bg-slate-900/60 border border-white/6 rounded-2xl p-6 flex gap-4">
+      <div class="w-9 h-9 rounded-lg bg-violet-500/15 flex items-center justify-center shrink-0 mt-0.5">
+        <svg class="w-5 h-5 text-violet-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M17.25 6.75L22.5 12l-5.25 5.25m-10.5 0L1.5 12l5.25-5.25m7.5-3l-4.5 16.5"/>
+        </svg>
+      </div>
+      <div>
+        <div class="font-semibold text-white text-[14px] mb-1">OpenAI-compatible API</div>
+        <div class="text-slate-400 text-[13px] leading-relaxed">Works with any library that supports a custom base URL — LangChain, LlamaIndex, the official SDK, or raw HTTP calls.</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ── Waitlist CTA ──────────────────────────────────────────────────────── -->
+<section id="waitlist" class="px-6 pb-28">
+  <div class="max-w-lg mx-auto text-center">
+    <div class="bg-gradient-to-b from-slate-800 to-slate-900 border border-white/10 rounded-3xl p-10 shadow-2xl shadow-black/50">
+      <div class="w-14 h-14 rounded-2xl bg-emerald-500 flex items-center justify-center mx-auto mb-5 shadow-lg shadow-emerald-500/30">
+        <svg class="w-7 h-7 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75m-3-7.036A11.959 11.959 0 013.598 6 11.99 11.99 0 003 9.749c0 5.592 3.824 10.29 9 11.623 5.176-1.332 9-6.03 9-11.622 0-1.31-.21-2.571-.598-3.751h-.152c-3.196 0-6.1-1.248-8.25-3.285z"/>
+        </svg>
+      </div>
+      <h2 class="text-[26px] font-bold text-white mb-2">Join the waitlist</h2>
+      <p class="text-slate-400 text-[14px] mb-7">
+        Get early access when we open up. We'll email you first — no noise, just the invite.
+      </p>
+
+      <form id="waitlist-form" class="space-y-3">
+        <input id="wl-email" type="email" required placeholder="you@company.com"
+          class="w-full bg-slate-900 border border-slate-700 text-white placeholder-slate-500
+                 text-[14px] px-4 py-3 rounded-xl outline-none focus:border-emerald-500
+                 focus:ring-1 focus:ring-emerald-500/50 transition-all text-center" />
+        <button type="submit" id="wl-btn"
+          class="btn-pulse w-full bg-emerald-500 hover:bg-emerald-400 active:scale-[0.98]
+                 text-white font-bold text-[15px] px-6 py-3.5 rounded-xl transition-all
+                 shadow-lg shadow-emerald-500/25">
+          Get early access →
+        </button>
+        <p id="wl-msg" class="text-[12px] text-slate-500">No credit card required.</p>
+      </form>
+    </div>
+  </div>
+</section>
+
+<!-- ── Footer ────────────────────────────────────────────────────────────── -->
+<footer class="border-t border-white/5 px-6 py-8 text-center">
+  <div class="flex items-center justify-center gap-2 mb-3">
+    <div class="w-6 h-6 rounded-md bg-emerald-500 flex items-center justify-center">
+      <svg class="w-3 h-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75m-3-7.036A11.959 11.959 0 013.598 6 11.99 11.99 0 003 9.749c0 5.592 3.824 10.29 9 11.623 5.176-1.332 9-6.03 9-11.622 0-1.31-.21-2.571-.598-3.751h-.152c-3.196 0-6.1-1.248-8.25-3.285z"/>
+      </svg>
+    </div>
+    <span class="text-slate-400 text-[13px] font-semibold">AWX Shredder</span>
+  </div>
+  <p class="text-slate-600 text-[12px]">© 2025 AWX Shredder · Built to keep AI budgets sane.</p>
+</footer>
+
+<script>
+(function () {
+  'use strict';
+
+  async function submitEmail(email, formId, btnId, msgId) {
+    var btn = document.getElementById(btnId);
+    var msg = document.getElementById(msgId);
+    var origText = btn.textContent;
+    btn.disabled = true;
+    btn.textContent = 'Joining…';
+
+    try {
+      var res = await fetch('/waitlist/join', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: email, source: formId }),
+      });
+      var data = await res.json();
+      if (data.ok) {
+        btn.textContent = '✓ You\'re on the list!';
+        btn.classList.remove('bg-emerald-500', 'hover:bg-emerald-400');
+        btn.classList.add('bg-slate-700', 'cursor-default');
+        if (msg) msg.textContent = 'We\'ll email you when early access opens.';
+        if (msg) msg.classList.add('text-emerald-400');
+        if (msg) msg.classList.remove('text-slate-500');
+        // Clear the input
+        var input = document.getElementById(formId === 'hero-form' ? 'hero-email' : 'wl-email');
+        if (input) input.value = '';
+      } else {
+        btn.disabled = false;
+        btn.textContent = origText;
+        if (msg) { msg.textContent = data.error || 'Something went wrong. Try again.'; msg.classList.add('text-red-400'); }
+      }
+    } catch (err) {
+      btn.disabled = false;
+      btn.textContent = origText;
+      if (msg) { msg.textContent = 'Network error. Please try again.'; msg.classList.add('text-red-400'); }
+    }
+  }
+
+  document.getElementById('hero-form').addEventListener('submit', function (e) {
+    e.preventDefault();
+    submitEmail(document.getElementById('hero-email').value.trim(), 'hero-form', 'hero-btn', 'hero-msg');
+  });
+
+  document.getElementById('waitlist-form').addEventListener('submit', function (e) {
+    e.preventDefault();
+    submitEmail(document.getElementById('wl-email').value.trim(), 'waitlist-form', 'wl-btn', 'wl-msg');
+  });
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,1065 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AWX Shredder — AI Spend Control</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20,400,0,0" rel="stylesheet" />
+
+  <style>
+    * { font-family: 'Inter', sans-serif; }
+    .material-symbols-outlined {
+      font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 20;
+      vertical-align: -3px;
+      display: inline-block;
+    }
+    @keyframes shimmer {
+      0%   { background-position: -400px 0; }
+      100% { background-position:  400px 0; }
+    }
+    .skeleton {
+      background: linear-gradient(90deg, #f1f5f9 25%, #e2e8f0 50%, #f1f5f9 75%) !important;
+      background-size: 800px 100% !important;
+      animation: shimmer 1.6s ease-in-out infinite !important;
+      color: transparent !important;
+      border-radius: 6px;
+      pointer-events: none;
+      user-select: none;
+    }
+    @keyframes flash-green {
+      0%   { background-color: rgba(16, 185, 129, 0.14); }
+      100% { background-color: transparent; }
+    }
+    @keyframes flash-red {
+      0%   { background-color: rgba(239, 68, 68, 0.11); }
+      100% { background-color: transparent; }
+    }
+    .flash-green { animation: flash-green 1.8s ease-out forwards; }
+    .flash-red   { animation: flash-red   1.8s ease-out forwards; }
+    @keyframes pulse-dot {
+      0%, 100% { opacity: 1; }
+      50%       { opacity: 0.4; }
+    }
+    .dot-live { animation: pulse-dot 2s ease-in-out infinite; }
+    @keyframes fadeIn { from { opacity:0; transform:translateY(10px); } to { opacity:1; transform:none; } }
+    .fade-in { animation: fadeIn 0.3s ease both; }
+    ::-webkit-scrollbar { width: 5px; height: 5px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 9999px; }
+    .agent-card-selected {
+      border-color: #0f172a !important;
+      box-shadow: 0 0 0 1px #0f172a !important;
+    }
+    /* Sidebar nav states */
+    .nav-item { color: #94a3b8; }
+    .nav-item:hover { color: #e2e8f0; background: rgba(255,255,255,0.05); }
+    .nav-item.active { color: #f1f5f9; background: rgba(255,255,255,0.08); font-weight:500; }
+    .nav-item.active .material-symbols-outlined { color: #34d399; }
+    .nav-item .material-symbols-outlined { color: #64748b; }
+  </style>
+</head>
+<body class="bg-slate-950 overflow-hidden">
+
+<!-- ════════════════════════════════════════════════════════════════════════
+     LOGIN SCREEN  (shown when not authenticated)
+════════════════════════════════════════════════════════════════════════ -->
+<div id="login-screen" class="hidden fixed inset-0 bg-slate-900 z-50 flex items-center justify-center p-4">
+  <div class="w-full max-w-sm fade-in">
+    <div class="text-center mb-8">
+      <div class="inline-flex items-center gap-2.5 text-white font-bold text-xl">
+        <div class="w-8 h-8 rounded-lg bg-emerald-500 flex items-center justify-center shadow-lg shadow-emerald-500/30">
+          <span class="material-symbols-outlined text-white" style="font-size:17px">shield</span>
+        </div>
+        AWX Shredder
+      </div>
+      <p class="text-slate-400 text-sm mt-1">Budget-enforcing AI proxy</p>
+    </div>
+
+    <div class="bg-slate-800 rounded-2xl p-8 shadow-2xl">
+      <h1 class="text-white text-xl font-semibold mb-1">Sign in</h1>
+      <p class="text-slate-400 text-sm mb-6">Access your spend dashboard.</p>
+
+      <a href="/auth/github"
+         class="flex items-center justify-center gap-2 w-full bg-white text-slate-900
+                font-medium py-2.5 px-4 rounded-lg hover:bg-slate-100 transition mb-4 text-sm">
+        <svg class="w-5 h-5" viewBox="0 0 24 24" fill="currentColor">
+          <path d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483
+                   0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466
+                   -.908-.62.069-.608.069-.608 1.003.07 1.531 1.032 1.531 1.032.892 1.53 2.341 1.088 2.91.832
+                   .092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688
+                   -.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004
+                   1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651
+                   .64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.942.359.31.678.921.678 1.856
+                   0 1.338-.012 2.419-.012 2.745 0 .268.18.58.688.482A10.019 10.019 0 0022 12.017C22 6.484
+                   17.522 2 12 2z"/>
+        </svg>
+        Continue with GitHub
+      </a>
+
+      <p class="text-center text-slate-500 text-xs">
+        No account?
+        <a href="/signup" class="text-indigo-400 hover:text-indigo-300">Sign up free</a>
+      </p>
+    </div>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════════════════════════════════════════
+     API KEY REVEAL MODAL  (shown once after first GitHub signup / signup flow)
+════════════════════════════════════════════════════════════════════════ -->
+<div id="key-modal" class="hidden fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4">
+  <div class="w-full max-w-md bg-slate-800 rounded-2xl p-8 shadow-2xl fade-in">
+    <div class="flex items-center gap-2 mb-4">
+      <div class="w-8 h-8 rounded-full bg-green-500/20 flex items-center justify-center">
+        <span class="material-symbols-outlined text-green-400" style="font-size:16px">check</span>
+      </div>
+      <h2 class="text-white text-xl font-semibold">Account created!</h2>
+    </div>
+
+    <div class="bg-amber-900/30 border border-amber-700/50 rounded-lg p-3 mb-4 flex gap-2">
+      <span class="material-symbols-outlined text-amber-400 shrink-0 mt-0.5" style="font-size:16px">warning</span>
+      <p class="text-amber-300 text-xs">
+        <strong>Save this API key now.</strong>
+        It will <em>not</em> be shown again — ever.
+      </p>
+    </div>
+
+    <label class="block text-slate-400 text-xs mb-1.5">Your API key</label>
+    <div class="flex gap-2 mb-3">
+      <code id="modal-api-key"
+        class="flex-1 bg-slate-900 text-green-400 font-mono text-xs px-3 py-2.5
+               rounded-lg border border-slate-700 overflow-x-auto whitespace-nowrap select-all">
+      </code>
+      <button onclick="copyModalKey()"
+        class="shrink-0 bg-slate-700 hover:bg-slate-600 text-white px-3 py-2 rounded-lg text-xs transition">
+        Copy
+      </button>
+    </div>
+    <p class="text-slate-500 text-xs mb-5">
+      Use as <code class="text-slate-400">Authorization: Bearer &lt;key&gt;</code> on all proxy calls.
+    </p>
+
+    <button onclick="dismissKeyModal()"
+      class="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-medium py-2.5
+             rounded-lg text-sm transition">
+      I've saved it — go to dashboard
+    </button>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════════════════════════════════════════
+     CREATE AGENT MODAL
+════════════════════════════════════════════════════════════════════════ -->
+<div id="create-agent-modal" class="hidden fixed inset-0 bg-black/60 z-40 flex items-center justify-center p-4">
+  <div class="w-full max-w-sm bg-white rounded-2xl p-6 shadow-2xl fade-in">
+    <div class="flex items-center justify-between mb-5">
+      <h3 class="font-semibold text-slate-900 text-base">New agent</h3>
+      <button onclick="closeCreateAgent()"
+        class="p-1 rounded text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition">
+        <span class="material-symbols-outlined" style="font-size:18px">close</span>
+      </button>
+    </div>
+
+    <form id="create-agent-form" class="space-y-3">
+      <div>
+        <label class="block text-sm text-slate-600 mb-1" for="ca-id">Agent ID</label>
+        <input id="ca-id" type="text" required placeholder="my-agent-01"
+          pattern="[a-zA-Z0-9_-]+" title="Letters, numbers, _ and - only"
+          class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm text-slate-900
+                 focus:outline-none focus:ring-2 focus:ring-slate-900 focus:border-transparent">
+        <p class="text-[11px] text-slate-400 mt-1">Letters, numbers, _ and - only.</p>
+      </div>
+      <div>
+        <label class="block text-sm text-slate-600 mb-1" for="ca-name">Display name <span class="text-slate-400">(optional)</span></label>
+        <input id="ca-name" type="text" placeholder="My Agent"
+          class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm text-slate-900
+                 focus:outline-none focus:ring-2 focus:ring-slate-900 focus:border-transparent">
+      </div>
+      <div>
+        <label class="block text-sm text-slate-600 mb-1" for="ca-budget">Daily budget (USD)</label>
+        <div class="relative">
+          <span class="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400 text-sm pointer-events-none">$</span>
+          <input id="ca-budget" type="number" required min="0.01" step="0.01" placeholder="50.00"
+            class="w-full pl-6 border border-slate-200 rounded-lg px-3 py-2 text-sm text-slate-900
+                   focus:outline-none focus:ring-2 focus:ring-slate-900 focus:border-transparent">
+        </div>
+      </div>
+      <div id="ca-error" class="hidden text-red-500 text-xs"></div>
+      <button type="submit" id="ca-submit"
+        class="w-full bg-slate-900 hover:bg-slate-700 text-white font-medium py-2.5
+               rounded-lg text-sm transition mt-1">
+        Create agent
+      </button>
+    </form>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════════════════════════════════════════
+     ERROR BANNER
+════════════════════════════════════════════════════════════════════════ -->
+<div id="error-banner"
+     class="hidden fixed top-0 left-0 right-0 z-50 flex items-center gap-3 px-5 py-3
+            bg-red-500 text-white text-sm font-medium shadow-xl">
+  <span class="material-symbols-outlined text-[18px]">error</span>
+  <span id="error-msg" class="flex-1">Something went wrong.</span>
+  <button onclick="hideError()" class="p-0.5 rounded hover:bg-red-400 transition-colors shrink-0">
+    <span class="material-symbols-outlined text-[16px]">close</span>
+  </button>
+</div>
+
+<!-- ════════════════════════════════════════════════════════════════════════
+     APP SHELL  (hidden until authenticated)
+════════════════════════════════════════════════════════════════════════ -->
+<div id="app-shell" class="hidden flex h-screen">
+
+  <!-- ══ Sidebar ════════════════════════════════════════════════════════════ -->
+  <aside class="w-[220px] shrink-0 bg-slate-900 border-r border-white/5 flex flex-col overflow-y-auto">
+
+    <!-- Logo -->
+    <div class="px-5 py-5 border-b border-white/5">
+      <div class="flex items-center gap-2.5">
+        <div class="w-7 h-7 rounded-lg bg-emerald-500 flex items-center justify-center shadow-lg shadow-emerald-500/30 shrink-0">
+          <span class="material-symbols-outlined text-white" style="font-size:16px">shield</span>
+        </div>
+        <div>
+          <div class="text-white font-semibold text-[15px] leading-none">AWX Shredder</div>
+          <div class="text-[10px] text-slate-500 uppercase tracking-widest mt-0.5">Spend Control</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Nav -->
+    <nav class="flex-1 px-3 py-4 space-y-0.5">
+      <div class="text-[10px] text-slate-600 uppercase tracking-widest font-semibold px-2 mb-2">Monitor</div>
+      <a href="#" id="nav-overview" onclick="switchView('overview');return false;"
+         class="nav-item active flex items-center gap-2 px-2.5 py-2 rounded-lg text-[13px] font-medium transition-colors">
+        <span class="material-symbols-outlined" style="font-size:18px">dashboard</span>Overview
+      </a>
+      <a href="#" id="nav-livefeed" onclick="switchView('livefeed');return false;"
+         class="nav-item flex items-center gap-2 px-2.5 py-2 rounded-lg text-[13px] transition-colors">
+        <span class="material-symbols-outlined" style="font-size:18px">bolt</span>Live Feed
+      </a>
+
+      <div class="text-[10px] text-slate-600 uppercase tracking-widest font-semibold px-2 mb-2 mt-5">Configure</div>
+      <a href="#" id="nav-agents" onclick="switchView('agents');return false;"
+         class="nav-item flex items-center gap-2 px-2.5 py-2 rounded-lg text-[13px] transition-colors">
+        <span class="material-symbols-outlined" style="font-size:18px">neurology</span>Agents
+      </a>
+      <a href="#" id="nav-settings" onclick="switchView('settings');return false;"
+         class="nav-item flex items-center gap-2 px-2.5 py-2 rounded-lg text-[13px] transition-colors">
+        <span class="material-symbols-outlined" style="font-size:18px">settings</span>Settings
+      </a>
+    </nav>
+
+    <!-- Org + connection status -->
+    <div class="px-3 pb-3">
+      <div class="bg-white/5 rounded-xl px-3 py-3">
+        <div class="text-[10px] text-slate-500 uppercase tracking-wider mb-0.5">Organization</div>
+        <div id="sidebar-org" class="text-[13px] font-medium text-slate-200 truncate">—</div>
+        <div class="flex items-center gap-1.5 mt-2.5">
+          <span id="sse-dot" class="w-1.5 h-1.5 rounded-full bg-slate-600 shrink-0 transition-all"></span>
+          <span id="sse-label" class="text-[11px] text-slate-500">Connecting…</span>
+        </div>
+      </div>
+      <!-- Logout -->
+      <form action="/auth/logout" method="POST" class="mt-2">
+        <button type="submit"
+          class="w-full flex items-center gap-1.5 px-3 py-2 rounded-lg text-slate-500
+                 hover:text-slate-300 hover:bg-white/5 text-[12px] transition-colors">
+          <span class="material-symbols-outlined" style="font-size:15px">logout</span>Sign out
+        </button>
+      </form>
+    </div>
+  </aside>
+
+  <!-- ══ Main area ══════════════════════════════════════════════════════════ -->
+  <div class="flex-1 flex flex-col overflow-hidden bg-slate-50">
+
+    <!-- Top bar -->
+    <header class="h-14 shrink-0 bg-white border-b border-slate-200 flex items-center justify-between px-7 z-10">
+      <div class="flex items-center gap-3">
+        <h1 id="page-title" class="font-semibold text-slate-900 text-[15px]">Overview</h1>
+        <div id="status-chips" class="flex items-center gap-1.5"></div>
+      </div>
+      <div class="flex items-center gap-4">
+        <span id="last-updated" class="text-[11px] text-slate-400 font-mono">—</span>
+        <button id="setup-btn" onclick="toggleSetupPanel()"
+                class="flex items-center gap-1.5 px-3 py-1.5 text-[12px] font-medium
+                       text-slate-600 border border-slate-200 rounded-lg hover:bg-slate-50
+                       hover:border-slate-300 transition-colors">
+          <span class="material-symbols-outlined text-slate-400" style="font-size:15px">integration_instructions</span>
+          Quick setup
+        </button>
+      </div>
+    </header>
+
+    <!-- Setup panel (collapsible) -->
+    <div id="setup-panel" class="hidden border-b border-slate-200 bg-blue-50/60 px-7 py-4">
+      <div class="flex items-start gap-4 max-w-4xl">
+        <div class="shrink-0 w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center mt-0.5">
+          <span class="material-symbols-outlined text-blue-600" style="font-size:18px">terminal</span>
+        </div>
+        <div class="flex-1 min-w-0">
+          <div class="font-semibold text-slate-800 text-[13px] mb-2">Point your agent at the proxy</div>
+          <div class="grid grid-cols-2 gap-3">
+            <div>
+              <div class="text-[10px] text-slate-400 uppercase tracking-wider mb-1">Base URL</div>
+              <div id="setup-proxy-url"
+                class="bg-slate-900 text-emerald-400 font-mono text-[11px] px-3 py-2
+                       rounded-lg overflow-x-auto whitespace-nowrap select-all cursor-text">
+              </div>
+            </div>
+            <div>
+              <div class="text-[10px] text-slate-400 uppercase tracking-wider mb-1">Required headers</div>
+              <div class="bg-slate-900 font-mono text-[11px] px-3 py-2 rounded-lg space-y-1">
+                <div><span class="text-slate-400">Authorization: </span><span class="text-amber-400">Bearer awx_live_...</span></div>
+                <div><span class="text-slate-400">x-agent-id: </span><span id="setup-agent-id" class="text-emerald-400">your-agent-id</span></div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <button onclick="closeSetupPanel()"
+                class="shrink-0 p-1 rounded text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors">
+          <span class="material-symbols-outlined" style="font-size:18px">close</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- ══ VIEW: Overview ════════════════════════════════════════════════ -->
+    <div id="view-overview" class="flex-1 overflow-y-auto">
+      <div class="px-7 py-6 space-y-6 max-w-[1400px]">
+
+        <!-- Summary cards -->
+        <div class="grid grid-cols-3 gap-4">
+          <div class="bg-white rounded-xl border border-slate-200 p-5 shadow-sm">
+            <div class="flex items-start justify-between mb-3">
+              <div class="text-[11px] font-semibold text-slate-400 uppercase tracking-wider">Total Spend Today</div>
+              <div class="w-8 h-8 rounded-lg bg-emerald-50 flex items-center justify-center shrink-0">
+                <span class="material-symbols-outlined text-emerald-600" style="font-size:17px">payments</span>
+              </div>
+            </div>
+            <div id="c-total-spend" class="text-[30px] font-bold text-slate-900 leading-none skeleton" style="min-width:90px;min-height:36px">&nbsp;</div>
+            <div class="text-[11px] text-slate-400 mt-2">across all agents</div>
+          </div>
+          <div class="bg-white rounded-xl border border-slate-200 p-5 shadow-sm">
+            <div class="flex items-start justify-between mb-3">
+              <div class="text-[11px] font-semibold text-slate-400 uppercase tracking-wider">Total Daily Budget</div>
+              <div class="w-8 h-8 rounded-lg bg-blue-50 flex items-center justify-center shrink-0">
+                <span class="material-symbols-outlined text-blue-500" style="font-size:17px">account_balance_wallet</span>
+              </div>
+            </div>
+            <div id="c-total-budget" class="text-[30px] font-bold text-slate-900 leading-none skeleton" style="min-width:90px;min-height:36px">&nbsp;</div>
+            <div id="c-budget-pct" class="text-[11px] text-slate-400 mt-2">—% utilized org-wide</div>
+          </div>
+          <div class="bg-white rounded-xl border border-slate-200 p-5 shadow-sm">
+            <div class="flex items-start justify-between mb-3">
+              <div class="text-[11px] font-semibold text-slate-400 uppercase tracking-wider">Requests Today</div>
+              <div class="w-8 h-8 rounded-lg bg-violet-50 flex items-center justify-center shrink-0">
+                <span class="material-symbols-outlined text-violet-500" style="font-size:17px">data_usage</span>
+              </div>
+            </div>
+            <div id="c-requests" class="text-[30px] font-bold text-slate-900 leading-none skeleton" style="min-width:90px;min-height:36px">&nbsp;</div>
+            <div class="text-[11px] text-slate-400 mt-2">approved + denied</div>
+          </div>
+        </div>
+
+        <!-- Recent activity mini-table on overview -->
+        <section>
+          <div class="flex items-center justify-between mb-3">
+            <div>
+              <h2 class="text-[12px] font-semibold text-slate-500 uppercase tracking-wider">Recent Activity</h2>
+              <p class="text-[11px] text-slate-400 mt-0.5">Last 10 events across all agents</p>
+            </div>
+            <button onclick="switchView('livefeed')"
+              class="flex items-center gap-1 px-3 py-1.5 text-[12px] text-slate-500 border border-slate-200 rounded-lg hover:bg-slate-50 transition-colors">
+              <span class="material-symbols-outlined" style="font-size:14px">open_in_full</span>
+              Full feed
+            </button>
+          </div>
+          <div class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+            <table class="w-full">
+              <thead>
+                <tr class="border-b border-slate-100 bg-slate-50/60">
+                  <th class="px-5 py-3 text-left text-[10px] font-semibold text-slate-400 uppercase tracking-wider w-28">Time</th>
+                  <th class="px-5 py-3 text-left text-[10px] font-semibold text-slate-400 uppercase tracking-wider">Agent</th>
+                  <th class="px-5 py-3 text-left text-[10px] font-semibold text-slate-400 uppercase tracking-wider w-32">Model</th>
+                  <th class="px-5 py-3 text-right text-[10px] font-semibold text-slate-400 uppercase tracking-wider w-20">Cost</th>
+                  <th class="px-5 py-3 text-left text-[10px] font-semibold text-slate-400 uppercase tracking-wider w-28">Status</th>
+                </tr>
+              </thead>
+              <tbody id="activity-tbody-overview">
+                <tr><td colspan="5" class="px-5 py-10 text-center text-slate-400 text-[13px]">
+                  <span class="material-symbols-outlined text-slate-300 block mb-2" style="font-size:28px">hourglass_empty</span>Loading…</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+      </div>
+    </div>
+
+    <!-- ══ VIEW: Live Feed ════════════════════════════════════════════════ -->
+    <div id="view-livefeed" class="hidden flex-1 flex flex-col overflow-hidden">
+      <div class="px-7 py-4 border-b border-slate-200 bg-white flex items-center justify-between shrink-0">
+        <div>
+          <p id="activity-sub" class="text-[13px] text-slate-600 font-medium">All agents · real-time</p>
+          <p class="text-[11px] text-slate-400 mt-0.5">New events appear at the top automatically</p>
+        </div>
+        <div class="flex items-center gap-2">
+          <span id="live-dot" class="w-2 h-2 rounded-full bg-slate-300 shrink-0 transition-all"></span>
+          <span id="live-label" class="text-[11px] text-slate-500 font-medium">Connecting</span>
+        </div>
+      </div>
+      <div class="flex-1 overflow-y-auto">
+        <table class="w-full">
+          <thead class="sticky top-0 z-10">
+            <tr class="border-b border-slate-200 bg-slate-50">
+              <th class="px-5 py-3 text-left text-[10px] font-semibold text-slate-400 uppercase tracking-wider w-28">Time</th>
+              <th class="px-5 py-3 text-left text-[10px] font-semibold text-slate-400 uppercase tracking-wider">Agent</th>
+              <th class="px-5 py-3 text-left text-[10px] font-semibold text-slate-400 uppercase tracking-wider w-40">Model</th>
+              <th class="px-5 py-3 text-right text-[10px] font-semibold text-slate-400 uppercase tracking-wider w-20">Tokens</th>
+              <th class="px-5 py-3 text-right text-[10px] font-semibold text-slate-400 uppercase tracking-wider w-24">Cost</th>
+              <th class="px-5 py-3 text-left text-[10px] font-semibold text-slate-400 uppercase tracking-wider w-28">Status</th>
+            </tr>
+          </thead>
+          <tbody id="activity-tbody" class="divide-y divide-slate-50 bg-white">
+            <tr><td colspan="6" class="px-5 py-16 text-center text-slate-400 text-[13px]">
+              <span class="material-symbols-outlined text-slate-300 block mb-2" style="font-size:36px">bolt</span>
+              Waiting for live events…<br>
+              <span class="text-[12px] text-slate-400 mt-1 block">Route proxy calls through AWX Shredder to see them here.</span>
+            </td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- ══ VIEW: Agents ══════════════════════════════════════════════════ -->
+    <div id="view-agents" class="hidden flex-1 overflow-y-auto">
+      <div class="px-7 py-6 max-w-[1400px]">
+        <div class="flex items-center justify-between mb-4">
+          <div class="flex items-center gap-3">
+            <h2 class="text-[12px] font-semibold text-slate-500 uppercase tracking-wider">All Agents</h2>
+            <span id="agent-count-label" class="text-[11px] text-slate-400"></span>
+          </div>
+          <button onclick="openCreateAgent()"
+            class="flex items-center gap-1 px-3 py-1.5 bg-slate-900 text-white text-[12px]
+                   font-medium rounded-lg hover:bg-slate-700 transition-colors">
+            <span class="material-symbols-outlined" style="font-size:14px">add</span>
+            New agent
+          </button>
+        </div>
+        <div id="agent-grid" class="grid gap-3"
+             style="grid-template-columns: repeat(auto-fill, minmax(268px, 1fr))">
+          <div class="skeleton bg-white rounded-xl border border-slate-200 h-40"></div>
+          <div class="skeleton bg-white rounded-xl border border-slate-200 h-40"></div>
+          <div class="skeleton bg-white rounded-xl border border-slate-200 h-40"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══ VIEW: Settings ════════════════════════════════════════════════ -->
+    <div id="view-settings" class="hidden flex-1 overflow-y-auto">
+      <div class="px-7 py-6 max-w-2xl space-y-5">
+        <div class="bg-white rounded-xl border border-slate-200 p-6 shadow-sm">
+          <h3 class="font-semibold text-slate-800 text-[14px] mb-1">Proxy endpoint</h3>
+          <p class="text-[12px] text-slate-500 mb-3">Replace <code class="bg-slate-100 px-1 rounded">api.openai.com</code> with this URL in your agent code.</p>
+          <div id="settings-proxy-url" class="bg-slate-900 text-emerald-400 font-mono text-[12px] px-4 py-3 rounded-lg select-all cursor-text break-all"></div>
+        </div>
+        <div class="bg-white rounded-xl border border-slate-200 p-6 shadow-sm">
+          <h3 class="font-semibold text-slate-800 text-[14px] mb-1">Required headers</h3>
+          <p class="text-[12px] text-slate-500 mb-3">Every request must include both headers.</p>
+          <div class="bg-slate-900 font-mono text-[12px] px-4 py-3 rounded-lg space-y-2">
+            <div><span class="text-slate-400">Authorization: </span><span class="text-amber-400">Bearer awx_live_&lt;your-api-key&gt;</span></div>
+            <div><span class="text-slate-400">x-agent-id: </span><span class="text-emerald-400">&lt;agent-id&gt;</span></div>
+          </div>
+        </div>
+        <div class="bg-white rounded-xl border border-slate-200 p-6 shadow-sm">
+          <h3 class="font-semibold text-slate-800 text-[14px] mb-1">Organization</h3>
+          <div class="text-[13px] text-slate-500 mt-2">Name: <span id="settings-org-name" class="text-slate-800 font-medium"></span></div>
+          <div class="text-[12px] text-slate-400 mt-3 bg-amber-50 border border-amber-200 rounded-lg p-3">
+            <strong class="text-amber-800">API key:</strong> Your API key was shown once at signup. If you've lost it, contact support or create a new org.
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- /main -->
+</div><!-- /app shell -->
+
+<!-- ════════════════════════════════════════════════════════════════════════
+     Dashboard script
+════════════════════════════════════════════════════════════════════════ -->
+<script>
+(function () {
+'use strict';
+
+// ── Config ────────────────────────────────────────────────────────────────
+var MAX_ROWS     = 20;
+var POLL_MS      = 30_000;
+var SSE_RETRY_MS = 4_000;
+
+// ── State ─────────────────────────────────────────────────────────────────
+var S = {
+  orgId:         null,
+  orgName:       null,
+  agents:        [],
+  selectedId:    null,
+  activityRows:  [],
+  firstLoad:     true,
+  sseRetryTimer: null,
+  sseSource:     null,
+  setupOpen:     false,
+};
+
+// ── Formatters ────────────────────────────────────────────────────────────
+function fmt$(n)  { return '$' + (+(n) || 0).toFixed(2); }
+function fmtN(n)  { return (+(n) || 0).toLocaleString(); }
+function tc(s)    { return String(s).replace(/_/g,' ').replace(/\b\w/g,function(c){return c.toUpperCase();}); }
+function fmtTs(iso) {
+  if (!iso) return '—';
+  var d = new Date(iso);
+  return d.getHours().toString().padStart(2,'0') + ':'
+       + d.getMinutes().toString().padStart(2,'0') + ':'
+       + d.getSeconds().toString().padStart(2,'0');
+}
+
+// ── Error banner ──────────────────────────────────────────────────────────
+function showError(msg) {
+  var b = document.getElementById('error-banner');
+  var m = document.getElementById('error-msg');
+  if (b) b.classList.remove('hidden');
+  if (m) m.textContent = msg;
+}
+window.hideError = function() {
+  var b = document.getElementById('error-banner');
+  if (b) b.classList.add('hidden');
+};
+
+// ── API key modal ─────────────────────────────────────────────────────────
+var modalKey = '';
+window.copyModalKey = function() {
+  if (!modalKey) return;
+  navigator.clipboard.writeText(modalKey).then(function() {
+    var btn = document.querySelector('#key-modal button[onclick="copyModalKey()"]');
+    if (!btn) return;
+    btn.textContent = 'Copied!';
+    btn.classList.add('text-green-400');
+    setTimeout(function() {
+      btn.textContent = 'Copy';
+      btn.classList.remove('text-green-400');
+    }, 2000);
+  });
+};
+window.dismissKeyModal = function() {
+  document.getElementById('key-modal').classList.add('hidden');
+  // Clean URL so reload doesn't re-show the modal
+  window.history.replaceState({}, '', '/');
+};
+
+// ── Create agent modal ────────────────────────────────────────────────────
+window.openCreateAgent = function() {
+  document.getElementById('ca-error').classList.add('hidden');
+  document.getElementById('create-agent-form').reset();
+  document.getElementById('create-agent-modal').classList.remove('hidden');
+  setTimeout(function(){ document.getElementById('ca-id').focus(); }, 50);
+};
+window.closeCreateAgent = function() {
+  document.getElementById('create-agent-modal').classList.add('hidden');
+};
+
+document.getElementById('create-agent-form').addEventListener('submit', async function(e) {
+  e.preventDefault();
+  var errEl  = document.getElementById('ca-error');
+  var btn    = document.getElementById('ca-submit');
+  errEl.classList.add('hidden');
+  btn.disabled = true;
+  btn.textContent = 'Creating…';
+
+  var payload = {
+    id:           document.getElementById('ca-id').value.trim(),
+    name:         document.getElementById('ca-name').value.trim() || undefined,
+    daily_budget: parseFloat(document.getElementById('ca-budget').value),
+  };
+
+  try {
+    var res = await fetch('/agents', {
+      method:  'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body:    JSON.stringify(payload),
+    });
+    var data = await res.json();
+
+    if (!res.ok) {
+      errEl.textContent = data.message ?? data.error ?? 'Failed to create agent.';
+      errEl.classList.remove('hidden');
+      btn.disabled = false;
+      btn.textContent = 'Create agent';
+      return;
+    }
+
+    window.closeCreateAgent();
+    await fetchDashboard();
+  } catch (err) {
+    errEl.textContent = 'Network error: ' + err.message;
+    errEl.classList.remove('hidden');
+    btn.disabled = false;
+    btn.textContent = 'Create agent';
+  }
+});
+
+// ── View switching ────────────────────────────────────────────────────────
+var VIEWS = ['overview','livefeed','agents','settings'];
+var VIEW_TITLES = { overview:'Overview', livefeed:'Live Feed', agents:'Agents', settings:'Settings' };
+var currentView = 'overview';
+
+window.switchView = function(name) {
+  if (!VIEWS.includes(name)) return;
+  currentView = name;
+  VIEWS.forEach(function(v) {
+    var el = document.getElementById('view-' + v);
+    if (el) {
+      el.classList.toggle('hidden', v !== name);
+      if (v !== name) el.classList.remove('flex');
+      else if (v === 'livefeed') el.classList.add('flex');
+    }
+    var nav = document.getElementById('nav-' + v);
+    if (nav) nav.classList.toggle('active', v === name);
+  });
+  var title = document.getElementById('page-title');
+  if (title) title.textContent = VIEW_TITLES[name] || name;
+};
+
+// ── Setup panel ───────────────────────────────────────────────────────────
+window.toggleSetupPanel = function() {
+  S.setupOpen = !S.setupOpen;
+  document.getElementById('setup-panel').classList.toggle('hidden', !S.setupOpen);
+};
+window.closeSetupPanel = function() {
+  S.setupOpen = false;
+  document.getElementById('setup-panel').classList.add('hidden');
+};
+function updateSetupPanel(agentId) {
+  var proxyUrl = window.location.origin + '/proxy/openai/v1/chat/completions';
+  ['setup-proxy-url','settings-proxy-url'].forEach(function(id) {
+    var el = document.getElementById(id);
+    if (el) el.textContent = proxyUrl;
+  });
+  var agentEl = document.getElementById('setup-agent-id');
+  if (agentEl) agentEl.textContent = agentId || 'your-agent-id';
+  var nameEl = document.getElementById('settings-org-name');
+  if (nameEl && S.orgName) nameEl.textContent = S.orgName;
+}
+
+// ── Progress bar colour ───────────────────────────────────────────────────
+function barColor(pct, status) {
+  if (status === 'BLOCKED' || pct >= 100) return '#ef4444';
+  if (pct >= 80) return '#f97316';
+  if (pct >= 50) return '#f59e0b';
+  return '#10b981';
+}
+
+// ── Status chips ──────────────────────────────────────────────────────────
+function statusBadge(status) {
+  var s = status.toUpperCase();
+  if (s === 'BLOCKED')
+    return '<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-red-50 text-red-700 border border-red-100"><span style="width:5px;height:5px;border-radius:50%;background:#ef4444;display:inline-block;flex-shrink:0"></span>BLOCKED</span>';
+  if (s === 'THROTTLED')
+    return '<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-amber-50 text-amber-700 border border-amber-100"><span style="width:5px;height:5px;border-radius:50%;background:#f59e0b;display:inline-block;flex-shrink:0"></span>THROTTLED</span>';
+  return '<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-100"><span style="width:5px;height:5px;border-radius:50%;background:#10b981;display:inline-block;flex-shrink:0"></span>ACTIVE</span>';
+}
+
+// ── SSE status indicator ──────────────────────────────────────────────────
+function setSseStatus(live) {
+  var dot1 = document.getElementById('sse-dot');
+  var lbl1 = document.getElementById('sse-label');
+  var dot2 = document.getElementById('live-dot');
+  var lbl2 = document.getElementById('live-label');
+  if (live) {
+    if (dot1) { dot1.style.backgroundColor='#10b981'; dot1.classList.add('dot-live'); }
+    if (lbl1) lbl1.textContent = 'Live';
+    if (dot2) { dot2.style.backgroundColor='#10b981'; dot2.classList.add('dot-live'); }
+    if (lbl2) lbl2.textContent = 'Live';
+  } else {
+    if (dot1) { dot1.style.backgroundColor='#f97316'; dot1.classList.remove('dot-live'); }
+    if (lbl1) lbl1.textContent = 'Reconnecting…';
+    if (dot2) { dot2.style.backgroundColor='#f97316'; dot2.classList.remove('dot-live'); }
+    if (lbl2) lbl2.textContent = 'Reconnecting';
+  }
+}
+
+// ── Render: top-bar status chips ──────────────────────────────────────────
+function renderStatusChips(counts) {
+  var el = document.getElementById('status-chips');
+  if (!el) return;
+  var html = '<span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-100">'
+           + (counts.ACTIVE||0) + ' active</span>';
+  if (counts.THROTTLED > 0)
+    html += '<span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-semibold bg-amber-50 text-amber-700 border border-amber-100 ml-1">'
+          + counts.THROTTLED + ' throttled</span>';
+  if (counts.BLOCKED > 0)
+    html += '<span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-semibold bg-red-50 text-red-700 border border-red-100 ml-1">'
+          + counts.BLOCKED + ' blocked</span>';
+  el.innerHTML = html;
+}
+
+// ── Render: summary cards ─────────────────────────────────────────────────
+function renderSummaryCards(data) {
+  var spend  = data.total_spend_today || 0;
+  var budget = data.total_budget      || 0;
+  var pct    = budget > 0 ? ((spend/budget)*100).toFixed(1) : '0.0';
+  var spEl = document.getElementById('c-total-spend');
+  var bEl  = document.getElementById('c-total-budget');
+  var rEl  = document.getElementById('c-requests');
+  var pEl  = document.getElementById('c-budget-pct');
+  if (spEl) { spEl.textContent=fmt$(spend);  spEl.classList.remove('skeleton'); }
+  if (bEl)  { bEl.textContent =fmt$(budget); bEl.classList.remove('skeleton'); }
+  if (rEl)  { rEl.textContent =fmtN(data.requests_today||0); rEl.classList.remove('skeleton'); }
+  if (pEl)  pEl.textContent = pct + '% utilized org-wide';
+  var lu = document.getElementById('last-updated');
+  if (lu) lu.textContent = 'Updated ' + fmtTs(new Date().toISOString());
+}
+
+// ── Render: agent grid ────────────────────────────────────────────────────
+function renderAgentGrid(agents) {
+  var grid = document.getElementById('agent-grid');
+  var cnt  = document.getElementById('agent-count-label');
+  if (!grid) return;
+  if (cnt) cnt.textContent = agents.length + ' agent' + (agents.length!==1?'s':'');
+
+  if (agents.length === 0) {
+    grid.innerHTML = '<div class="col-span-full text-center py-12">'
+      + '<div class="w-12 h-12 bg-slate-100 rounded-xl flex items-center justify-center mx-auto mb-3">'
+      + '<span class="material-symbols-outlined text-slate-400" style="font-size:24px">neurology</span></div>'
+      + '<div class="font-semibold text-slate-600 text-[14px] mb-1">No agents yet</div>'
+      + '<div class="text-slate-400 text-[13px] mb-4">Create your first agent to start tracking spend</div>'
+      + '<button onclick="openCreateAgent()" class="px-4 py-2 bg-slate-900 text-white text-[13px] font-medium rounded-lg hover:bg-slate-700 transition-colors">New agent</button>'
+      + '</div>';
+    return;
+  }
+
+  grid.innerHTML = agents.map(agentCard).join('');
+
+  agents.forEach(function(a) {
+    var card = document.getElementById('card-' + a.id);
+    if (!card) return;
+
+    card.addEventListener('click', function(e) {
+      if (e.target.closest('.budget-zone') || e.target.closest('.edit-btn')) return;
+      S.selectedId = a.id;
+      updateSetupPanel(a.id);
+    });
+
+    var editBtn   = card.querySelector('.edit-btn');
+    var zone      = card.querySelector('.budget-zone');
+    var saveBtn   = card.querySelector('.save-btn');
+    var cancelBtn = card.querySelector('.cancel-btn');
+    var input     = card.querySelector('.budget-input');
+
+    if (editBtn) editBtn.addEventListener('click', function(e) {
+      e.stopPropagation();
+      var hidden = zone.classList.contains('hidden');
+      zone.classList.toggle('hidden', !hidden);
+      if (hidden && input) { input.focus(); input.select(); }
+    });
+    if (cancelBtn) cancelBtn.addEventListener('click', function(e) {
+      e.stopPropagation();
+      if (zone) zone.classList.add('hidden');
+    });
+    if (saveBtn) saveBtn.addEventListener('click', function(e) {
+      e.stopPropagation();
+      var v = parseFloat(input ? input.value : '');
+      if (!v || v <= 0) {
+        if (input) input.classList.add('border-red-400','ring-1','ring-red-300');
+        return;
+      }
+      if (input) input.classList.remove('border-red-400','ring-1','ring-red-300');
+      if (zone) zone.classList.add('hidden');
+      updateBudget(a.id, v);
+    });
+    if (input) input.addEventListener('keydown', function(e) {
+      if (e.key==='Enter')  { if (saveBtn)   saveBtn.click(); }
+      if (e.key==='Escape') { if (cancelBtn) cancelBtn.click(); }
+    });
+  });
+}
+
+function agentCard(a) {
+  var pct    = a.dailyBudget > 0 ? Math.min((a.spentToday/a.dailyBudget)*100, 100) : 0;
+  var color  = barColor(pct, a.status);
+  var label  = (a.name && a.name !== a.id) ? a.name : tc(a.id);
+
+  return '<div id="card-' + a.id + '" class="bg-white rounded-xl border border-slate-200 p-5 shadow-sm cursor-pointer hover:shadow-md hover:border-slate-300 transition-all duration-150">'
+    + '<div class="flex items-start justify-between mb-4">'
+    +   '<div class="min-w-0 flex-1 mr-3">'
+    +     '<div class="font-semibold text-slate-900 text-[14px] truncate">' + label + '</div>'
+    +     '<div class="font-mono text-[10px] text-slate-400 mt-0.5 truncate">' + a.id + '</div>'
+    +   '</div>'
+    +   statusBadge(a.status)
+    + '</div>'
+    + '<div class="mb-4">'
+    +   '<div class="flex justify-between text-[12px] mb-1.5">'
+    +     '<span class="text-slate-500">Daily spend</span>'
+    +     '<span class="font-mono font-semibold text-slate-700">' + fmt$(a.spentToday) + ' <span class="font-normal text-slate-400">/ ' + fmt$(a.dailyBudget) + '</span></span>'
+    +   '</div>'
+    +   '<div class="h-1.5 bg-slate-100 rounded-full overflow-hidden">'
+    +     '<div class="h-full rounded-full transition-all duration-700" style="width:' + pct.toFixed(1) + '%;background-color:' + color + '"></div>'
+    +   '</div>'
+    +   '<div class="flex justify-between mt-1">'
+    +     '<span class="text-[10px] text-slate-400">' + fmtN(a.requests_today||0) + ' req today</span>'
+    +     '<span class="text-[10px] font-mono font-semibold" style="color:' + color + '">' + pct.toFixed(1) + '%</span>'
+    +   '</div>'
+    + '</div>'
+    + '<div class="budget-zone hidden pt-3 border-t border-slate-100">'
+    +   '<div class="text-[11px] text-slate-500 mb-1.5">New daily budget (USD)</div>'
+    +   '<div class="flex gap-2 items-center">'
+    +     '<div class="relative flex-1">'
+    +       '<span class="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400 text-[13px] pointer-events-none">$</span>'
+    +       '<input type="number" class="budget-input w-full pl-6 pr-2 py-1.5 text-[13px] border border-slate-200 rounded-lg outline-none focus:border-slate-400 focus:ring-1 focus:ring-slate-200 transition-colors" value="' + a.dailyBudget.toFixed(2) + '" min="0.01" step="0.01" />'
+    +     '</div>'
+    +     '<button class="save-btn shrink-0 px-3 py-1.5 bg-slate-900 text-white text-[12px] font-medium rounded-lg hover:bg-slate-700 transition-colors">Save</button>'
+    +     '<button class="cancel-btn shrink-0 text-[12px] text-slate-400 hover:text-slate-700 px-1.5 py-1.5 transition-colors">Cancel</button>'
+    +   '</div>'
+    + '</div>'
+    + '<button class="edit-btn mt-3 text-[12px] text-slate-400 hover:text-slate-600 transition-colors flex items-center gap-1">'
+    +   '<span class="material-symbols-outlined" style="font-size:13px">edit</span>Edit budget'
+    + '</button>'
+    + '</div>';
+}
+
+// ── Render: activity row (6-col for livefeed, 5-col for overview mini) ────
+function activityRow(log, agentId, flash, mini) {
+  var model  = (log.metadata && log.metadata.model) ? log.metadata.model : '—';
+  var tokens = log.metadata && (log.metadata.tokens||log.metadata.estimated_input_tokens)
+               ? fmtN(log.metadata.tokens||log.metadata.estimated_input_tokens) : '—';
+  var cost   = fmt$(log.actualCost!=null ? log.actualCost : (log.cost!=null ? log.cost : log.estimatedCost));
+  var isOk   = (log.status==='approved'||log.status==='completed'||log.status==='OK');
+  var badge  = isOk
+    ? '<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-100">OK</span>'
+    : '<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-semibold bg-red-50 text-red-700 border border-red-100">DENIED</span>';
+  var flashCls = flash==='green' ? ' flash-green' : flash==='red' ? ' flash-red' : '';
+  var base = '<tr class="border-b border-slate-50 hover:bg-slate-50/60 transition-colors' + flashCls + '">'
+    + '<td class="px-5 py-3 font-mono text-[12px] text-slate-500 whitespace-nowrap">' + fmtTs(log.timestamp) + '</td>'
+    + '<td class="px-5 py-3"><div class="font-medium text-[13px] text-slate-700">' + tc(agentId||'—') + '</div>'
+    +   '<div class="font-mono text-[10px] text-slate-400">' + (agentId||'—') + '</div></td>'
+    + '<td class="px-5 py-3 font-mono text-[12px] text-slate-600">' + model + '</td>';
+  if (!mini) base += '<td class="px-5 py-3 text-right font-mono text-[12px] text-slate-600">' + tokens + '</td>';
+  base += '<td class="px-5 py-3 text-right font-mono text-[12px] font-semibold text-slate-800">' + cost + '</td>'
+    + '<td class="px-5 py-3">' + badge + '</td>'
+    + '</tr>';
+  return base;
+}
+
+function renderActivityTable() {
+  // Full live-feed table
+  var tbody = document.getElementById('activity-tbody');
+  if (tbody) {
+    if (S.activityRows.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="6" class="px-5 py-16 text-center">'
+        + '<div class="flex flex-col items-center gap-3">'
+        + '<div class="w-14 h-14 bg-slate-100 rounded-xl flex items-center justify-center">'
+        + '<span class="material-symbols-outlined text-slate-400" style="font-size:28px">bolt</span></div>'
+        + '<div class="font-semibold text-slate-600 text-[14px]">No events yet</div>'
+        + '<div class="text-slate-400 text-[13px]">Route your agent traffic through the proxy to see live data</div>'
+        + '</div></td></tr>';
+    } else {
+      tbody.innerHTML = S.activityRows.map(function(r){ return activityRow(r.log,r.agentId,null,false); }).join('');
+    }
+  }
+  // Overview mini-table (last 8, 5-col)
+  var mini = document.getElementById('activity-tbody-overview');
+  if (mini) {
+    if (S.activityRows.length === 0) {
+      mini.innerHTML = '<tr><td colspan="5" class="px-5 py-10 text-center text-slate-400 text-[13px]">'
+        + '<span class="material-symbols-outlined text-slate-300 block mb-2" style="font-size:28px">inbox</span>'
+        + 'No activity yet — send a request through the proxy</td></tr>';
+    } else {
+      mini.innerHTML = S.activityRows.slice(0,8).map(function(r){ return activityRow(r.log,r.agentId,null,true); }).join('');
+    }
+  }
+}
+
+// ── API calls ─────────────────────────────────────────────────────────────
+async function fetchDashboard() {
+  try {
+    var res = await fetch('/dashboard');
+    if (res.status === 401) { showLoginScreen(); return; }
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    var data = await res.json();
+    hideError();
+
+    S.orgName = data.org_name || S.orgId;
+    S.agents  = data.agents   || [];
+
+    var orgEl = document.getElementById('sidebar-org');
+    if (orgEl) orgEl.textContent = S.orgName;
+
+    var first = S.agents.find(function(a){ return a.status.toUpperCase()==='ACTIVE'; }) || S.agents[0];
+    if (first) { S.selectedId = first.id; updateSetupPanel(first.id); }
+
+    renderSummaryCards(data);
+    renderStatusChips(data.agent_counts || {});
+    renderAgentGrid(S.agents);
+
+    // On first load, fetch recent activity for overview mini-table
+    if (S.firstLoad) {
+      S.firstLoad = false;
+      await fetchRecentActivity();
+    }
+  } catch (err) {
+    showError('Dashboard unreachable — is the server running? (' + err.message + ')');
+    console.error('[dashboard]', err);
+  }
+}
+
+async function fetchRecentActivity() {
+  // Fetch logs for first few agents to populate the activity tables on load
+  try {
+    var targets = S.agents.slice(0, 5);
+    var allRows = [];
+    for (var i = 0; i < targets.length; i++) {
+      var res = await fetch('/agents/' + targets[i].id + '/logs');
+      if (!res.ok) continue;
+      var data = await res.json();
+      var agentId = targets[i].id;
+      (data.logs||[]).forEach(function(log) { allRows.push({log:log,agentId:agentId}); });
+    }
+    // Sort by timestamp descending
+    allRows.sort(function(a,b){ return new Date(b.log.timestamp||0) - new Date(a.log.timestamp||0); });
+    S.activityRows = allRows.slice(0, MAX_ROWS);
+    renderActivityTable();
+  } catch (err) {
+    console.error('[recent activity]', err);
+    renderActivityTable();
+  }
+}
+
+async function updateBudget(agentId, newVal) {
+  var agent = S.agents.find(function(a){ return a.id===agentId; });
+  var prev  = agent ? agent.dailyBudget : null;
+  if (agent) { agent.dailyBudget=newVal; renderAgentGrid(S.agents); }
+  try {
+    var res = await fetch('/agents/'+agentId+'/budget', {
+      method:  'PATCH',
+      headers: { 'Content-Type':'application/json' },
+      body:    JSON.stringify({ daily_budget:newVal }),
+    });
+    if (!res.ok) {
+      if (agent&&prev!==null) { agent.dailyBudget=prev; renderAgentGrid(S.agents); }
+      showError('Budget update failed (HTTP '+res.status+')');
+    }
+  } catch (err) {
+    if (agent&&prev!==null) { agent.dailyBudget=prev; renderAgentGrid(S.agents); }
+    showError('Budget update failed: '+err.message);
+  }
+}
+
+// ── SSE ───────────────────────────────────────────────────────────────────
+function connectSSE() {
+  if (S.sseRetryTimer) { clearTimeout(S.sseRetryTimer); S.sseRetryTimer=null; }
+  if (S.sseSource) { try { S.sseSource.close(); } catch(e){} }
+
+  var es = new EventSource('/events/activity');
+  S.sseSource = es;
+
+  es.addEventListener('connected', function() { setSseStatus(true); });
+
+  es.addEventListener('activity', function(e) {
+    try {
+      var ev = JSON.parse(e.data);
+      setSseStatus(true);
+      var flash = (ev.status==='approved'||ev.status==='completed'||ev.status==='OK') ? 'green' : 'red';
+      var synth = {
+        id:            ev.usage_log_id,
+        timestamp:     ev.timestamp,
+        metadata:      { model: ev.model },
+        actualCost:    ev.cost,
+        estimatedCost: ev.cost,
+        cost:          ev.cost,
+        status:        ev.status,
+      };
+      S.activityRows.unshift({ log: synth, agentId: ev.agent_id });
+      if (S.activityRows.length > MAX_ROWS) S.activityRows.pop();
+
+      // Prepend to live-feed table directly for snappy feel
+      var tbody = document.getElementById('activity-tbody');
+      if (tbody) {
+        if (tbody.rows.length===1 && tbody.rows[0].cells.length===1) tbody.innerHTML='';
+        tbody.insertAdjacentHTML('afterbegin', activityRow(synth, ev.agent_id, flash, false));
+        while (tbody.rows.length > MAX_ROWS) tbody.deleteRow(tbody.rows.length-1);
+      }
+      // Refresh overview mini-table
+      var mini = document.getElementById('activity-tbody-overview');
+      if (mini) {
+        if (mini.rows.length===1 && mini.rows[0].cells.length===1) mini.innerHTML='';
+        mini.insertAdjacentHTML('afterbegin', activityRow(synth, ev.agent_id, flash, true));
+        while (mini.rows.length > 8) mini.deleteRow(mini.rows.length-1);
+      }
+    } catch(err) { console.error('[sse parse]',err); }
+  });
+
+  es.onerror = function() {
+    setSseStatus(false);
+    es.close();
+    S.sseSource = null;
+    S.sseRetryTimer = setTimeout(connectSSE, SSE_RETRY_MS);
+  };
+}
+
+// ── Auth gate ─────────────────────────────────────────────────────────────
+function showLoginScreen() {
+  // Redirect to landing page which has the sign-in flow
+  window.location.href = '/';
+}
+
+function showApp() {
+  document.getElementById('login-screen').classList.add('hidden');
+  document.getElementById('app-shell').classList.remove('hidden');
+  document.getElementById('app-shell').style.display = 'flex';
+}
+
+// ── Boot ──────────────────────────────────────────────────────────────────
+async function boot() {
+  // Check for ?new=1&key= from GitHub first-time signup
+  var params  = new URLSearchParams(window.location.search);
+  var newUser = params.get('new') === '1';
+  var apiKey  = params.get('key');
+
+  if (newUser && apiKey) {
+    modalKey = apiKey;
+    document.getElementById('modal-api-key').textContent = apiKey;
+    document.getElementById('key-modal').classList.remove('hidden');
+  }
+
+  // Verify session
+  try {
+    var res = await fetch('/auth/me');
+    if (!res.ok) {
+      showLoginScreen();
+      return;
+    }
+    var me = await res.json();
+    S.orgId   = me.org_id;
+    S.orgName = me.org_name;
+
+    var orgEl = document.getElementById('sidebar-org');
+    if (orgEl) orgEl.textContent = me.org_name;
+
+    showApp();
+    updateSetupPanel(null);
+    await fetchDashboard();
+    connectSSE();
+    setInterval(fetchDashboard, POLL_MS);
+  } catch (err) {
+    console.error('[boot]', err);
+    showLoginScreen();
+  }
+}
+
+boot();
+
+})();
+</script>
+</body>
+</html>

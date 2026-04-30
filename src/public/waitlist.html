@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Join the Waitlist — AWX Shredder</title>
+  <meta name="description" content="Get early access to AWX Shredder — budget enforcement and spend control for AI agents. Hard caps, Slack alerts, and a real-time dashboard. Free to start." />
+  <meta property="og:title" content="AWX Shredder — AI Agent Budget Control" />
+  <meta property="og:description" content="Hard budget caps enforced before the API call reaches OpenAI. Per-agent spend tracking, Slack alerts, real-time dashboard." />
+  <meta property="og:type" content="website" />
+  <meta property="og:url" content="https://awx-shredder.fly.dev/waitlist" />
+  <meta name="robots" content="index, follow" />
+
+  <script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "SoftwareApplication",
+  "name": "AWX Shredder",
+  "alternateName": "Aegis",
+  "url": "https://awx-shredder.fly.dev",
+  "description": "Budget enforcement and spend control for AI agents. Sits between your AI agent and OpenAI or Anthropic — enforces daily budgets, blocks overspend before the API call is made, and alerts operators via Slack at 50%, 80%, and 100% of budget.",
+  "applicationCategory": "DeveloperApplication",
+  "applicationSubCategory": "AI Infrastructure",
+  "operatingSystem": "Any",
+  "offers": {
+    "@type": "AggregateOffer",
+    "lowPrice": "0",
+    "highPrice": "2000",
+    "priceCurrency": "USD",
+    "offerCount": "5"
+  },
+  "audience": {
+    "@type": "Audience",
+    "audienceType": "AI developers, startup founders, engineers running AI agents in production"
+  },
+  "featureList": [
+    "Hard budget caps enforced before API call reaches OpenAI",
+    "Slack alerts at 50%, 80%, and 100% of daily budget",
+    "OpenAI and Anthropic proxy support",
+    "Per-agent spend tracking and audit log",
+    "Real-time dashboard",
+    "Self-serve signup"
+  ],
+  "provider": {
+    "@type": "Organization",
+    "name": "AWX Shredder",
+    "url": "https://awx-shredder.fly.dev"
+  }
+}
+</script>
+
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <style>
+    * { font-family: 'Inter', sans-serif; }
+    @keyframes fadeUp { from { opacity:0; transform:translateY(16px); } to { opacity:1; transform:none; } }
+    .fade-up { animation: fadeUp 0.5s ease both; }
+    .delay-1 { animation-delay: 0.08s; }
+    .delay-2 { animation-delay: 0.18s; }
+    .delay-3 { animation-delay: 0.28s; }
+    .glow { box-shadow: 0 0 0 1px rgba(52,211,153,0.3), 0 0 20px rgba(52,211,153,0.12); }
+  </style>
+</head>
+<body class="bg-gray-950 text-gray-100 min-h-screen flex flex-col items-center justify-center px-4 py-16">
+
+  <!-- Back link -->
+  <a href="/" class="absolute top-6 left-6 text-sm text-gray-500 hover:text-gray-300 transition-colors flex items-center gap-1.5">
+    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>
+    Back
+  </a>
+
+  <div class="w-full max-w-md text-center">
+
+    <!-- Badge -->
+    <div class="fade-up inline-flex items-center gap-2 px-3 py-1.5 rounded-full border border-emerald-500/25 bg-emerald-500/8 text-emerald-400 text-xs font-medium mb-6 glow">
+      <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
+      Early access · Limited spots
+    </div>
+
+    <!-- Heading -->
+    <h1 class="fade-up delay-1 text-4xl font-extrabold tracking-tight text-white mb-3">
+      Stop AI agents from<br />burning your budget
+    </h1>
+
+    <p class="fade-up delay-2 text-gray-400 text-base leading-relaxed mb-8">
+      AWX Shredder enforces hard spend limits on every agent — blocking the API call <em>before</em> it hits OpenAI. Join the waitlist for early access.
+    </p>
+
+    <!-- Features list -->
+    <ul class="fade-up delay-2 text-left space-y-2.5 mb-9 text-sm text-gray-400">
+      <li class="flex items-start gap-2.5">
+        <svg class="w-4 h-4 text-emerald-400 mt-0.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/></svg>
+        Hard budget caps enforced <strong class="text-gray-200">before</strong> the API call reaches OpenAI
+      </li>
+      <li class="flex items-start gap-2.5">
+        <svg class="w-4 h-4 text-emerald-400 mt-0.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/></svg>
+        Slack alerts at 50 %, 80 %, and 100 % of daily budget
+      </li>
+      <li class="flex items-start gap-2.5">
+        <svg class="w-4 h-4 text-emerald-400 mt-0.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/></svg>
+        Per-agent spend tracking, audit log &amp; real-time dashboard
+      </li>
+      <li class="flex items-start gap-2.5">
+        <svg class="w-4 h-4 text-emerald-400 mt-0.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/></svg>
+        OpenAI &amp; Anthropic proxy — one-line drop-in
+      </li>
+      <li class="flex items-start gap-2.5">
+        <svg class="w-4 h-4 text-emerald-400 mt-0.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/></svg>
+        Free to start — no credit card required
+      </li>
+    </ul>
+
+    <!-- Form -->
+    <form id="waitlist-form" class="fade-up delay-3 flex flex-col gap-3">
+      <input
+        id="email-input"
+        type="email"
+        required
+        placeholder="you@company.com"
+        class="w-full px-4 py-3 rounded-xl bg-gray-900 border border-gray-800 text-white placeholder-gray-600 text-sm focus:outline-none focus:border-emerald-500/60 focus:ring-1 focus:ring-emerald-500/30 transition"
+      />
+      <button
+        type="submit"
+        id="submit-btn"
+        class="w-full px-4 py-3 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-gray-950 font-semibold text-sm transition-colors"
+      >
+        Join the waitlist
+      </button>
+      <p id="form-msg" class="text-sm min-h-[1.25rem]"></p>
+    </form>
+
+    <p class="fade-up delay-3 mt-6 text-xs text-gray-600">No spam. Unsubscribe any time.</p>
+  </div>
+
+  <script>
+    const form = document.getElementById('waitlist-form');
+    const msg  = document.getElementById('form-msg');
+    const btn  = document.getElementById('submit-btn');
+
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const email = document.getElementById('email-input').value.trim();
+      btn.disabled = true;
+      btn.textContent = 'Joining…';
+      msg.textContent = '';
+      msg.className = 'text-sm min-h-[1.25rem]';
+
+      try {
+        const res = await fetch('/waitlist/join', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email, source: 'waitlist-page' }),
+        });
+        const data = await res.json();
+        if (data.ok) {
+          msg.textContent = "You're on the list! We'll be in touch.";
+          msg.className = 'text-sm min-h-[1.25rem] text-emerald-400';
+          btn.textContent = 'You\'re in ✓';
+          btn.className = btn.className.replace('bg-emerald-500 hover:bg-emerald-400', 'bg-emerald-900 cursor-default');
+        } else {
+          throw new Error(data.error || 'Something went wrong.');
+        }
+      } catch (err) {
+        msg.textContent = err.message;
+        msg.className = 'text-sm min-h-[1.25rem] text-red-400';
+        btn.disabled = false;
+        btn.textContent = 'Join the waitlist';
+      }
+    });
+  </script>
+</body>
+</html>
