@@ -25,6 +25,7 @@ import { randomBytes } from 'node:crypto';
 import { db } from '../db/client.js';
 import { githubAccounts, organizations } from '../db/schema.js';
 import { generateApiKey, hashApiKey } from '../lib/apikey.js';
+import { sendWelcomeEmail } from '../lib/email.js';
 import type { AppEnv } from '../types.js';
 
 export const authRouter = new Hono<AppEnv>();
@@ -177,6 +178,12 @@ authRouter.get('/github/callback', async (c) => {
 
   const token = await makeSessionToken(orgId, user.login);
   setSession(c, token);
+
+  // Send welcome email if we have their email from GitHub (non-blocking)
+  const emailTo = user.email ?? null;
+  if (emailTo) {
+    sendWelcomeEmail({ to: emailTo, orgName, apiKey }).catch(() => {});
+  }
 
   // Redirect to dashboard with key in URL — shown once, then gone
   return c.redirect(`/app?new=1&key=${encodeURIComponent(apiKey)}`);

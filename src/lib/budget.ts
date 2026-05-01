@@ -96,7 +96,7 @@ export async function reserveBudget(params: {
     let currentAlertsFired: AlertsFired =
       (agent.alertsFired as AlertsFired | null) ?? { ...DEFAULT_ALERTS_FIRED };
 
-    // Day rollover
+    // Day rollover — reset spend, alerts, and status back to ACTIVE
     if (isDifferentUtcDay(lastReset, now)) {
       spentToday = 0;
       currentAlertsFired = { ...DEFAULT_ALERTS_FIRED };
@@ -106,6 +106,7 @@ export async function reserveBudget(params: {
           spentToday: 0,
           lastResetAt: now,
           alertsFired: currentAlertsFired,
+          status: 'ACTIVE',
         })
         .where(eq(agents.id, agent.id));
     }
@@ -130,6 +131,12 @@ export async function reserveBudget(params: {
           .set({ alertsFired: updated })
           .where(eq(agents.id, agent.id));
       }
+
+      // Mark agent as BLOCKED so the dashboard reflects reality
+      await tx
+        .update(agents)
+        .set({ status: 'BLOCKED' })
+        .where(eq(agents.id, agent.id));
 
       const [denied] = await tx
         .insert(usageLogs)

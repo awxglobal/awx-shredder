@@ -365,8 +365,75 @@
           </div>
         </div>
 
+        <!-- ── Empty-state onboarding (shown only when no agents exist) ─── -->
+        <div id="empty-onboarding" class="hidden">
+          <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+            <!-- Header -->
+            <div class="px-8 py-6 border-b border-slate-100 flex items-center gap-4">
+              <div class="w-12 h-12 rounded-xl bg-emerald-50 flex items-center justify-center shrink-0">
+                <span class="material-symbols-outlined text-emerald-500" style="font-size:26px">rocket_launch</span>
+              </div>
+              <div>
+                <div class="font-semibold text-slate-900 text-[16px]">You're one step away from controlling AI spend</div>
+                <div class="text-slate-500 text-[13px] mt-0.5">Create an agent, set a daily budget, and point your code at the proxy. Done.</div>
+              </div>
+              <button onclick="openCreateAgent()"
+                class="ml-auto shrink-0 px-4 py-2 bg-slate-900 hover:bg-slate-700 text-white text-[13px]
+                       font-medium rounded-lg transition-colors flex items-center gap-1.5">
+                <span class="material-symbols-outlined" style="font-size:15px">add</span>
+                Create first agent
+              </button>
+            </div>
+            <!-- Steps -->
+            <div class="grid grid-cols-3 divide-x divide-slate-100">
+              <!-- Step 1 -->
+              <div class="px-6 py-5">
+                <div class="flex items-center gap-2 mb-3">
+                  <div class="w-6 h-6 rounded-full bg-slate-900 text-white text-[11px] font-bold flex items-center justify-center shrink-0">1</div>
+                  <div class="font-semibold text-slate-700 text-[13px]">Create an agent</div>
+                </div>
+                <p class="text-slate-400 text-[12px] mb-3">Give it an ID and a daily budget in dollars. Click the button above.</p>
+                <div class="bg-slate-50 rounded-lg px-3 py-2 font-mono text-[11px] text-slate-500">
+                  <span class="text-slate-400">ID:</span> my-agent-01<br>
+                  <span class="text-slate-400">Budget:</span> $10.00 / day
+                </div>
+              </div>
+              <!-- Step 2 -->
+              <div class="px-6 py-5">
+                <div class="flex items-center gap-2 mb-3">
+                  <div class="w-6 h-6 rounded-full bg-slate-900 text-white text-[11px] font-bold flex items-center justify-center shrink-0">2</div>
+                  <div class="font-semibold text-slate-700 text-[13px]">Point your agent at the proxy</div>
+                </div>
+                <p class="text-slate-400 text-[12px] mb-3">Replace your OpenAI base URL with the AWX endpoint.</p>
+                <div class="bg-slate-900 rounded-lg px-3 py-2 font-mono text-[11px] space-y-1">
+                  <div><span class="text-slate-500"># .env</span></div>
+                  <div><span class="text-slate-400">OPENAI_BASE_URL=</span></div>
+                  <div class="text-emerald-400 break-all" id="empty-proxy-url"></div>
+                </div>
+              </div>
+              <!-- Step 3 -->
+              <div class="px-6 py-5">
+                <div class="flex items-center gap-2 mb-3">
+                  <div class="w-6 h-6 rounded-full bg-slate-900 text-white text-[11px] font-bold flex items-center justify-center shrink-0">3</div>
+                  <div class="font-semibold text-slate-700 text-[13px]">Add the two required headers</div>
+                </div>
+                <p class="text-slate-400 text-[12px] mb-3">Your AWX key as <code class="bg-slate-100 px-1 rounded">Authorization</code> and your agent ID.</p>
+                <div class="bg-slate-900 rounded-lg px-3 py-2 font-mono text-[11px] space-y-1">
+                  <div><span class="text-slate-400">Authorization: </span><span class="text-amber-400">Bearer awx_live_…</span></div>
+                  <div><span class="text-slate-400">x-agent-id: </span><span class="text-emerald-400">my-agent-01</span></div>
+                </div>
+              </div>
+            </div>
+            <!-- Footer hint -->
+            <div class="px-8 py-3 bg-slate-50/60 border-t border-slate-100 flex items-center gap-2">
+              <span class="material-symbols-outlined text-slate-400" style="font-size:15px">info</span>
+              <span class="text-[11px] text-slate-400">Your API key was shown once at signup. Find it in the welcome email or <a href="#" onclick="switchView('settings');return false;" class="text-indigo-500 hover:text-indigo-700">check Settings</a>.</span>
+            </div>
+          </div>
+        </div>
+
         <!-- Recent activity mini-table on overview -->
-        <section>
+        <section id="overview-activity-section">
           <div class="flex items-center justify-between mb-3">
             <div>
               <h2 class="text-[12px] font-semibold text-slate-500 uppercase tracking-wider">Recent Activity</h2>
@@ -641,15 +708,26 @@ window.closeSetupPanel = function() {
   document.getElementById('setup-panel').classList.add('hidden');
 };
 function updateSetupPanel(agentId) {
-  var proxyUrl = window.location.origin + '/proxy/openai/v1/chat/completions';
+  var proxyUrl = window.location.origin + '/proxy/v1/chat/completions';
   ['setup-proxy-url','settings-proxy-url'].forEach(function(id) {
     var el = document.getElementById(id);
     if (el) el.textContent = proxyUrl;
   });
+  var emptyUrl = document.getElementById('empty-proxy-url');
+  if (emptyUrl) emptyUrl.textContent = proxyUrl;
   var agentEl = document.getElementById('setup-agent-id');
   if (agentEl) agentEl.textContent = agentId || 'your-agent-id';
   var nameEl = document.getElementById('settings-org-name');
   if (nameEl && S.orgName) nameEl.textContent = S.orgName;
+}
+
+function renderEmptyState(hasAgents) {
+  var panel = document.getElementById('empty-onboarding');
+  var activity = document.getElementById('overview-activity-section');
+  var cards = document.querySelector('#view-overview .grid.grid-cols-3');
+  if (panel)    panel.classList.toggle('hidden', hasAgents);
+  if (activity) activity.classList.toggle('hidden', !hasAgents);
+  if (cards)    cards.classList.toggle('hidden', !hasAgents);
 }
 
 // ── Progress bar colour ───────────────────────────────────────────────────
@@ -901,6 +979,7 @@ async function fetchDashboard() {
     renderSummaryCards(data);
     renderStatusChips(data.agent_counts || {});
     renderAgentGrid(S.agents);
+    renderEmptyState(S.agents.length > 0);
 
     // On first load, fetch recent activity for overview mini-table
     if (S.firstLoad) {
@@ -1048,6 +1127,7 @@ async function boot() {
 
     showApp();
     updateSetupPanel(null);
+    renderEmptyState(false);  // show empty state immediately; fetchDashboard will correct it
     await fetchDashboard();
     connectSSE();
     setInterval(fetchDashboard, POLL_MS);

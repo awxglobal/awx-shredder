@@ -16,6 +16,7 @@ import { z } from 'zod';
 import { db } from '../db/client.js';
 import { organizations } from '../db/schema.js';
 import { generateApiKey, hashApiKey } from '../lib/apikey.js';
+import { sendWelcomeEmail } from '../lib/email.js';
 import type { AppEnv } from '../types.js';
 
 export const signupRouter = new Hono<AppEnv>();
@@ -63,6 +64,9 @@ signupRouter.post('/signup', zValidator('json', signupBody), async (c) => {
       secure: process.env.NODE_ENV === 'production',
     });
   }
+
+  // Send welcome email (non-blocking — failure does not break signup)
+  sendWelcomeEmail({ to: email, orgName, apiKey }).catch(() => {});
 
   return c.json({
     org_id: orgId,

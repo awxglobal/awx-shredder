@@ -1,11 +1,12 @@
 /**
  * Agent-visibility routes.
  *
- * GET /llms.txt                    — LLM/AI-crawler product overview (llmstxt.org spec)
- * GET /.well-known/ai-agent.json   — product capability manifest for AI agents
- * GET /api/v1/waitlist-info        — live read-only waitlist status (JSON)
- * GET /robots.txt                  — served as static file via index.ts
- * GET /sitemap.xml                 — basic sitemap
+ * GET /llms.txt                        — LLM/AI-crawler product overview (llmstxt.org spec)
+ * GET /.well-known/ai-agent.json       — product capability manifest for AI agents
+ * GET /.well-known/agent-card.json     — A2A protocol agent card (a2a-protocol.org spec)
+ * GET /api/v1/waitlist-info            — live read-only waitlist status (JSON)
+ * GET /robots.txt                      — served as static file via index.ts
+ * GET /sitemap.xml                     — basic sitemap
  */
 
 import { Hono } from 'hono';
@@ -149,6 +150,71 @@ discoveryRouter.get('/.well-known/ai-agent.json', (c) => {
     },
     contact: {
       waitlist: 'https://awx-shredder.fly.dev/waitlist',
+    },
+  });
+});
+
+// ── GET /.well-known/agent-card.json (A2A Protocol) ──────────────────────────
+
+discoveryRouter.get('/.well-known/agent-card.json', (c) => {
+  return c.json({
+    name: 'AWX Shredder',
+    description:
+      'Hard budget enforcement and spend control for AI agents. ' +
+      'A drop-in HTTP proxy that enforces per-agent daily spend limits on ' +
+      'OpenAI and Anthropic API calls. Blocks overspend before the API call ' +
+      'is made. Alerts operators via Slack at 50%, 80%, and 100% of budget.',
+    url: 'https://awx-shredder.fly.dev',
+    version: '1.0.0',
+    capabilities: {
+      streaming: false,
+      pushNotifications: false,
+      stateTransitionHistory: true,
+    },
+    defaultInputModes: ['application/json'],
+    defaultOutputModes: ['application/json'],
+    skills: [
+      {
+        id: 'budget-enforcement',
+        name: 'Budget Enforcement',
+        description:
+          'Enforce daily spend limits per AI agent. Blocks API calls when ' +
+          'the agent has exceeded its budget. Returns HTTP 429 with spend details.',
+        inputModes: ['application/json'],
+        outputModes: ['application/json'],
+        examples: [
+          'Check if agent has budget remaining before making an OpenAI call',
+          'Block a request that would exceed the daily $5 limit for an agent',
+        ],
+      },
+      {
+        id: 'spend-tracking',
+        name: 'Spend Tracking',
+        description:
+          'Track token usage and USD cost per agent per day. ' +
+          'Full audit log of every request with model, tokens, cost, and status.',
+        inputModes: ['application/json'],
+        outputModes: ['application/json'],
+      },
+      {
+        id: 'slack-alerts',
+        name: 'Slack Budget Alerts',
+        description:
+          'Send Slack alerts when an agent reaches 50%, 80%, or 100% of ' +
+          'its daily budget. Fires exactly once per threshold per day.',
+        inputModes: ['application/json'],
+        outputModes: ['application/json'],
+      },
+    ],
+    provider: {
+      organization: 'AWX Global',
+      url: 'https://awx-shredder.fly.dev',
+    },
+    documentationUrl: 'https://github.com/awxglobal/awx-shredder',
+    supportsAnonymousAccess: false,
+    authenticationInfo: {
+      type: 'bearer',
+      description: 'AWX API key (awx_live_...). Get one at https://awx-shredder.fly.dev/signup',
     },
   });
 });
