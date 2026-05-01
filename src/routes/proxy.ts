@@ -1,12 +1,13 @@
 import { zValidator } from '@hono/zod-validator';
 import { and, eq } from 'drizzle-orm';
-import { Hono } from 'hono';
+import { type Context, Hono } from 'hono';
 import { stream } from 'hono/streaming';
 import { z } from 'zod';
 import { db } from '../db/client.js';
 import { agents, organizations } from '../db/schema.js';
 import { requireApiKey } from '../middleware/requireApiKey.js';
 import { finalizeUsage, reserveBudget } from '../lib/budget.js';
+import { sendBudgetAlertEmail } from '../lib/email.js';
 import { emitActivity } from '../lib/events.js';
 import {
   computeActualCost,
@@ -96,28 +97,14 @@ export const proxyRouter = new Hono<AppEnv>();
  *  5. If approved → forward to OpenAI (streaming or non-streaming)
  *  6. On response → finalize with actual token cost from OpenAI usage object
  */
-// ── Also mount on /v1/chat/completions (short path used in marketing) ────────
-proxyRouter.post('/v1/chat/completions', requireApiKey, zValidator('header', proxyHeaders), zValidator('json', chatCompletionsBody), async (c) => {
-  // Rewrite path and re-use the same handler by delegating internally
-  return proxyRouter.fetch(
-    new Request(new URL('/proxy/openai/v1/chat/completions', c.req.url), {
-      method: 'POST',
-      headers: c.req.raw.headers,
-      body: c.req.raw.body,
-    }),
-    c.env,
-  );
-});
+// ── Shared OpenAI chat handler (registered on both path aliases) ─────────────
 
-proxyRouter.post(
-  '/openai/v1/chat/completions',
-  requireApiKey,
-  zValidator('header', proxyHeaders),
-  zValidator('json', chatCompletionsBody),
-  async (c) => {
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+async function handleOpenAIChat(c: Context<AppEnv> & { req: { valid: (t: any) => any } }) {
     const orgId = c.get('orgId');
-    const { 'x-agent-id': agentId } = c.req.valid('header');
-    const body = c.req.valid('json');
+    const { 'x-agent-id': agentId } = c.req.valid('header') as { 'x-agent-id': string };
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const body = c.req.valid('json') as any;
     const { model, messages, stream: isStreaming = false } = body;
 
     // ── 1. Verify agent belongs to the authenticated org ───────────────────
@@ -187,6 +174,25 @@ proxyRouter.post(
         model,
         timestamp: new Date().toISOString(),
       });
+
+      // Fire "We just saved you $X" email — only on the first denial (100% threshold)
+      if (reservation.newlyBreachedThresholds.includes(100)) {
+        void (async () => {
+          const [org] = await db
+            .select({ email: organizations.email })
+            .from(organizations)
+            .where(eq(organizations.id, orgId));
+          if (org?.email) {
+            void sendBudgetAlertEmail({
+              to: org.email,
+              agentId,
+              savedAmount: reservation.attemptedCost,
+              dailyBudget: reservation.dailyBudget,
+              attemptedCost: reservation.attemptedCost,
+            });
+          }
+        })();
+      }
 
       return c.json(
         {
@@ -315,8 +321,13 @@ proxyRouter.post(
         void finalizeUsage({ logId: usageLogId, actualCost });
       }
     });
-  },
-);
+}
+
+// Register the same handler on both path aliases
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const _h = handleOpenAIChat as any;
+proxyRouter.post('/openai/v1/chat/completions', requireApiKey, zValidator('header', proxyHeaders), zValidator('json', chatCompletionsBody), _h);
+proxyRouter.post('/v1/chat/completions',         requireApiKey, zValidator('header', proxyHeaders), zValidator('json', chatCompletionsBody), _h);
 
 // ── POST /proxy/v1/messages  (Anthropic Claude) ───────────────────────────────
 //

@@ -12,6 +12,8 @@ export const organizations = pgTable('organizations', {
   id: text('id').primaryKey(),
   name: text('name').notNull(),
   planTier: text('plan_tier', { enum: ['FREE', 'PAID'] }).notNull(),
+  /** Contact email — used for budget alert emails. */
+  email: text('email'),
   /** Per-org OpenAI API key. Falls back to OPENAI_API_KEY env var if null. */
   openaiApiKey: text('openai_api_key'),
   /** SHA-256 hash of the org's awx_live_ API key. Null until a key is generated. */

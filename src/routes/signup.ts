@@ -45,6 +45,7 @@ signupRouter.post('/signup', zValidator('json', signupBody), async (c) => {
     name: orgName,
     planTier: 'FREE',
     apiKeyHash,
+    email,
   });
 
   // Set a 7-day session so the user lands straight on the dashboard

@@ -168,6 +168,7 @@ authRouter.get('/github/callback', async (c) => {
     name: orgName,
     planTier: 'FREE',
     apiKeyHash,
+    email: user.email ?? null,
   });
 
   await db.insert(githubAccounts).values({
