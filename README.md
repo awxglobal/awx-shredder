@@ -144,3 +144,14 @@ APP_URL=               # Public base URL (e.g. https://your-domain.com)
 - **llms.txt**: https://awx-shredder.fly.dev/llms.txt
 - **Waitlist API**: https://awx-shredder.fly.dev/api/v1/waitlist-info
 - **Agent manifest**: https://awx-shredder.fly.dev/.well-known/ai-agent.json
+
+<!-- AWX_ARTICLES_START -->
+## 📝 Recent Technical Articles
+
+*0 articles published — auto-updated daily*
+
+- **Per-agent daily spend limits: the architecture every AI team needs** — 
+
+> Articles published to [dev.to](https://dev.to/search?q=awx+shredder), [Hashnode](https://hashnode.com/search?q=awx+shredder), and [awx-shredder.fly.dev/blog](https://awx-shredder.fly.dev/blog)
+
+<!-- AWX_ARTICLES_END -->
