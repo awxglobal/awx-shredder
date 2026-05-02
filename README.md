@@ -150,7 +150,7 @@ APP_URL=               # Public base URL (e.g. https://your-domain.com)
 
 *0 articles published — auto-updated daily*
 
-- **Per-agent daily spend limits: the architecture every AI team needs** — 
+- **Why your LLM agent costs 10x more than your estimate** — 
 
 > Articles published to [dev.to](https://dev.to/search?q=awx+shredder), [Hashnode](https://hashnode.com/search?q=awx+shredder), and [awx-shredder.fly.dev/blog](https://awx-shredder.fly.dev/blog)
 
