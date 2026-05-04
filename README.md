@@ -148,8 +148,10 @@ APP_URL=               # Public base URL (e.g. https://your-domain.com)
 <!-- AWX_ARTICLES_START -->
 ## 📝 Recent Technical Articles
 
-*0 articles published — auto-updated daily*
+*1 articles published — auto-updated daily*
 
+- **CrewAI budget enforcement: a production pattern** — 
+- **AutoGen cost management: how to stop agents spending too much** — 
 - **Why your LLM agent costs 10x more than your estimate** — 
 
 > Articles published to [dev.to](https://dev.to/search?q=awx+shredder), [Hashnode](https://hashnode.com/search?q=awx+shredder), and [awx-shredder.fly.dev/blog](https://awx-shredder.fly.dev/blog)
