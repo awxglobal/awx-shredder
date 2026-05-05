@@ -148,8 +148,9 @@ APP_URL=               # Public base URL (e.g. https://your-domain.com)
 <!-- AWX_ARTICLES_START -->
 ## 📝 Recent Technical Articles
 
-*1 articles published — auto-updated daily*
+*2 articles published — auto-updated daily*
 
+- **What happens when an AI agent hits a rate limit — and how to design around it** — 
 - **CrewAI budget enforcement: a production pattern** — 
 - **AutoGen cost management: how to stop agents spending too much** — 
 - **Why your LLM agent costs 10x more than your estimate** — 
