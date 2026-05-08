@@ -68,6 +68,18 @@ authRouter.get('/github', (c) => {
     );
   }
 
+  // Store post-login redirect URL if provided (e.g. from GitHub App install callback)
+  const postLoginRedirect = c.req.query('redirect');
+  if (postLoginRedirect) {
+    setCookie(c, 'post_login_redirect', postLoginRedirect, {
+      httpOnly: true,
+      sameSite: 'Lax',
+      path: '/',
+      maxAge: 600, // 10 minutes
+      secure: isProd(),
+    });
+  }
+
   const state = randomBytes(16).toString('hex');
   setCookie(c, 'oauth_state', state, {
     httpOnly: true,
@@ -150,10 +162,12 @@ authRouter.get('/github/callback', async (c) => {
     .where(eq(githubAccounts.githubId, githubId));
 
   if (existing) {
-    // Returning user — set session and go to dashboard
+    // Returning user — set session and go to dashboard (or post-login redirect)
     const token = await makeSessionToken(existing.orgId, user.login);
     setSession(c, token);
-    return c.redirect('/app');
+    const postLoginRedirect = getCookie(c, 'post_login_redirect');
+    deleteCookie(c, 'post_login_redirect', { path: '/' });
+    return c.redirect(postLoginRedirect ?? '/app');
   }
 
   // ── First-time login: create org + API key ───────────────────────────────
@@ -186,7 +200,13 @@ authRouter.get('/github/callback', async (c) => {
     sendWelcomeEmail({ to: emailTo, orgName, apiKey }).catch(() => {});
   }
 
-  // Redirect to dashboard with key in URL — shown once, then gone
+  // Redirect to post-login destination or dashboard with key in URL
+  const postLoginRedirect = getCookie(c, 'post_login_redirect');
+  deleteCookie(c, 'post_login_redirect', { path: '/' });
+  if (postLoginRedirect) {
+    // New user came from GitHub App install — go complete that flow first
+    return c.redirect(`${postLoginRedirect}${postLoginRedirect.includes('?') ? '&' : '?'}new=1&key=${encodeURIComponent(apiKey)}`);
+  }
   return c.redirect(`/app?new=1&key=${encodeURIComponent(apiKey)}`);
 });
 
