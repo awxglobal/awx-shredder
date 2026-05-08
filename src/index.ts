@@ -1,4 +1,4 @@
-import 'dotenv/config';
+﻿import 'dotenv/config';
 import { createReadStream, statSync } from 'node:fs';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
@@ -16,6 +16,9 @@ import { signupRouter } from './routes/signup.js';
 import { usageRouter } from './routes/usage.js';
 import { waitlistRouter } from './routes/waitlist.js';
 import { discoveryRouter } from './routes/discovery.js';
+import { blogRouter } from './routes/blog.js';
+import { syncRouter } from './routes/sync.js';
+import { githubWebhookRouter } from './routes/github-webhooks.js';
 import { getSnapshot, snapshotForWire } from './views/dashboard.js';
 import type { AppEnv } from './types.js';
 
@@ -30,7 +33,7 @@ const app = new Hono<AppEnv>();
 
 app.use('*', logger());
 
-// ── Public routes (no auth required) ─────────────────────────────────────────
+// â”€â”€ Public routes (no auth required) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 // Agent-discovery routes (llms.txt, ai-agent.json, waitlist API, sitemap)
 app.route('/', discoveryRouter);
@@ -41,7 +44,7 @@ app.get('/robots.txt', (c) => c.text(robotsTxt, 200, { 'Content-Type': 'text/pla
 // Landing page (public)
 app.get('/', (c) => c.html(landingHtml));
 
-// Demo video — served with correct MIME type and range support
+// Demo video â€” served with correct MIME type and range support
 app.get('/demo.mp4', (c) => {
   const videoPath = join(__dirname, 'public/demo.mp4');
   try {
@@ -90,7 +93,13 @@ app.route('/waitlist', waitlistRouter);
 // Self-serve signup
 app.route('/', signupRouter);
 
-// Legacy snapshot SSE stream (unauthenticated — used by the old ticker demo)
+// GitHub App webhooks + installation callback (no auth — GitHub sends these)
+app.route('/', githubWebhookRouter);
+
+// Blog â€” public read + internal write for marketing agent
+app.route('/', blogRouter);
+
+// Legacy snapshot SSE stream (unauthenticated â€” used by the old ticker demo)
 app.get('/events', (c) =>
   streamSSE(c, async (stream) => {
     let id = 0;
@@ -124,7 +133,7 @@ app.get('/health', async (c) => {
   }
 });
 
-// ── Debug read-only routes (consider removing before public launch) ───────────
+// â”€â”€ Debug read-only routes (consider removing before public launch) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 app.get('/organizations', async (c) => {
   const rows = await db.select({ id: organizations.id, name: organizations.name }).from(organizations);
@@ -146,7 +155,7 @@ app.get('/usage-logs', async (c) => {
   return c.json(rows);
 });
 
-// ── Authenticated routes ──────────────────────────────────────────────────────
+// â”€â”€ Authenticated routes â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 // Dashboard API: all endpoints require API key or session cookie
 app.route('/', dashboardRouter);
@@ -156,18 +165,21 @@ app.route('/usage', usageRouter);
 
 // OpenAI proxy: requires API key
 app.route('/proxy', proxyRouter);
+app.route('/sync', syncRouter);
 
-// ── Server ────────────────────────────────────────────────────────────────────
+// â”€â”€ Server â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 const port = Number(process.env.PORT ?? 3000);
 
 serve({ fetch: app.fetch, port, hostname: '0.0.0.0' }, (info) => {
-  console.log(`\n  ✦ AWX Shredder running on http://localhost:${info.port}`);
-  console.log(`  ✦ Dashboard:  http://localhost:${info.port}/`);
-  console.log(`  ✦ Sign up:    http://localhost:${info.port}/signup`);
-  console.log(`  ✦ GitHub auth: http://localhost:${info.port}/auth/github\n`);
+  console.log(`\n  âœ¦ AWX Shredder running on http://localhost:${info.port}`);
+  console.log(`  âœ¦ Dashboard:  http://localhost:${info.port}/`);
+  console.log(`  âœ¦ Sign up:    http://localhost:${info.port}/signup`);
+  console.log(`  âœ¦ GitHub auth: http://localhost:${info.port}/auth/github\n`);
 
-  // Demo ticker — disabled for live demos so only real proxy calls appear.
+  // Demo ticker â€” disabled for live demos so only real proxy calls appear.
   // Re-enable by uncommenting (generates synthetic spend every 1.5 s on test agents).
   // startTicker(1500);
 });
+
+

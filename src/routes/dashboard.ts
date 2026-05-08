@@ -4,7 +4,7 @@ import { Hono } from 'hono';
 import { streamSSE } from 'hono/streaming';
 import { z } from 'zod';
 import { db } from '../db/client.js';
-import { agents, organizations, usageLogs } from '../db/schema.js';
+import { agents, memoryEntries, organizations, projects, usageLogs } from '../db/schema.js';
 import { type ActivityEvent, onActivity } from '../lib/events.js';
 import { requireAuth } from '../middleware/requireAuth.js';
 import type { AppEnv } from '../types.js';
@@ -272,4 +272,61 @@ dashboardRouter.get('/events/activity', (c) => {
       unsubscribe();
     }
   });
+});
+
+// ── App dashboard: project + memory data (session-authenticated) ──────────────
+
+/**
+ * GET /app-data/projects
+ * Returns all projects for the authenticated org. Used by the /app dashboard.
+ */
+dashboardRouter.get('/app-data/projects', async (c) => {
+  const orgId = c.get('orgId');
+  const rows = await db
+    .select()
+    .from(projects)
+    .where(eq(projects.orgId, orgId))
+    .orderBy(desc(projects.createdAt));
+  return c.json({ projects: rows });
+});
+
+/**
+ * GET /app-data/memory/:projectId
+ * Returns memory entries for the given project (must belong to this org).
+ */
+dashboardRouter.get('/app-data/memory/:projectId', async (c) => {
+  const orgId = c.get('orgId');
+  const projectId = c.req.param('projectId');
+
+  // Verify project belongs to this org
+  const [proj] = await db
+    .select({ id: projects.id })
+    .from(projects)
+    .where(and(eq(projects.id, projectId), eq(projects.orgId, orgId)));
+
+  if (!proj) return c.json({ error: 'project_not_found' }, 404);
+
+  const limitParam = Number(c.req.query('limit') ?? 100);
+  const limit = Number.isFinite(limitParam) && limitParam > 0 ? Math.min(limitParam, 200) : 100;
+  const category = c.req.query('category');
+
+  type MemoryCategory = 'bug_fix' | 'schema_change' | 'project_rule' | 'decision' | 'constraint' | 'note'
+    | 'pr_opened' | 'pr_merged' | 'pr_closed' | 'issue_opened' | 'issue_closed' | 'review_submitted' | 'ci_failed' | 'ci_passed';
+  const VALID_CATS: MemoryCategory[] = [
+    'bug_fix', 'schema_change', 'project_rule', 'decision', 'constraint', 'note',
+    'pr_opened', 'pr_merged', 'pr_closed', 'issue_opened', 'issue_closed', 'review_submitted', 'ci_failed', 'ci_passed',
+  ];
+  const conditions = [eq(memoryEntries.projectId, projectId)];
+  if (category && VALID_CATS.includes(category as MemoryCategory)) {
+    conditions.push(eq(memoryEntries.category, category as MemoryCategory));
+  }
+
+  const entries = await db
+    .select()
+    .from(memoryEntries)
+    .where(and(...conditions))
+    .orderBy(desc(memoryEntries.createdAt))
+    .limit(limit);
+
+  return c.json({ entries });
 });
