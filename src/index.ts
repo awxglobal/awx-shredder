@@ -127,7 +127,20 @@ app.get('/status', (c) => c.json({ ok: true, service: 'awx-shredder' }));
 app.get('/health', async (c) => {
   try {
     await db.select().from(organizations).limit(1);
-    return c.json({ status: 'healthy', db: 'connected' });
+
+    // GitHub App status — count installations and repo links
+    const { githubInstallations, githubRepoLinks } = await import('./db/schema.js');
+    const installs = await db.select({ id: githubInstallations.id }).from(githubInstallations);
+    const repoLinks = await db.select({ id: githubRepoLinks.id }).from(githubRepoLinks);
+
+    return c.json({
+      status: 'healthy',
+      db: 'connected',
+      github_app: {
+        installations: installs.length,
+        linked_repos: repoLinks.length,
+      },
+    });
   } catch (err) {
     return c.json({ status: 'unhealthy', error: (err as Error).message }, 500);
   }
