@@ -22,7 +22,10 @@ import {
   mapWebhookEvent,
   newInstallationId,
   newRepoLinkId,
+  getPRFiles,
+  postPRComment,
 } from '../lib/github.js';
+import { analyzePR, formatPRComment } from '../lib/pr-analysis.js';
 import type { AppEnv } from '../types.js';
 
 export const githubWebhookRouter = new Hono<AppEnv>();
@@ -179,6 +182,38 @@ githubWebhookRouter.post('/webhooks/github', async (c) => {
 
   const totalWritten = result.memories.length + result.fileEvents.length;
   console.log(`[github-webhook] Wrote ${result.memories.length} memories + ${result.fileEvents.length} file events for project ${repoLink.projectId}`);
+
+  // ── MVP 2: Brain-powered PR comment with risk analysis ──────────────────
+  if (eventType === 'pull_request' && (payload.action === 'opened' || payload.action === 'reopened')) {
+    try {
+      const pr = payload.pull_request;
+      const installationGhId = String(payload.installation?.id ?? '');
+      const [owner, repo] = repoFullName.split('/');
+
+      if (pr && installationGhId && owner && repo) {
+        // Get changed files from GitHub API
+        const prFiles = await getPRFiles(installationGhId, owner, repo, pr.number);
+        const filenames = prFiles.map((f) => f.filename);
+
+        console.log(`[github-webhook] Analyzing PR #${pr.number} — ${filenames.length} files changed`);
+
+        // Run brain analysis
+        const analysis = await analyzePR(repoLink.projectId, filenames);
+
+        // Only post a comment if there's something useful to say
+        if (analysis.fileRisks.length > 0 || analysis.warnings.length > 0) {
+          const commentBody = formatPRComment(analysis, pr.title ?? '');
+          await postPRComment(installationGhId, owner, repo, pr.number, commentBody);
+          console.log(`[github-webhook] Posted brain analysis comment on PR #${pr.number} (risk: ${analysis.overallRisk})`);
+        } else {
+          console.log(`[github-webhook] PR #${pr.number} — no brain signals, skipping comment`);
+        }
+      }
+    } catch (err) {
+      // Don't fail the webhook if PR analysis fails
+      console.error(`[github-webhook] PR analysis failed:`, (err as Error).message);
+    }
+  }
 
   return c.json({ ok: true, memories: result.memories.length, file_events: result.fileEvents.length });
 });

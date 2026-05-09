@@ -7,8 +7,7 @@
  *   GITHUB_APP_PRIVATE_KEY — PEM key (for future JWT/token management)
  */
 
-import { createHmac, timingSafeEqual } from 'node:crypto';
-import { randomBytes } from 'node:crypto';
+import { createHmac, timingSafeEqual, createSign, randomBytes } from 'node:crypto';
 
 // ── Signature verification ──────────────────────────────────────────────────
 
@@ -295,4 +294,141 @@ function mapPush(payload: Record<string, any>): WebhookResult | null {
 function truncate(str: string, max: number): string {
   if (str.length <= max) return str;
   return str.slice(0, max) + '…';
+}
+
+// ── GitHub App JWT & Installation Tokens ───────────────────────────────────
+
+/**
+ * Create a JWT signed with the GitHub App's private key (RS256).
+ * Used to authenticate as the GitHub App itself.
+ * JWT is valid for 10 minutes (GitHub's maximum).
+ */
+function createAppJWT(): string {
+  const appId = process.env.GITHUB_APP_ID;
+  const privateKey = process.env.GITHUB_APP_PRIVATE_KEY;
+
+  if (!appId || !privateKey) {
+    throw new Error('GITHUB_APP_ID and GITHUB_APP_PRIVATE_KEY must be set');
+  }
+
+  // Decode the private key — may be base64-encoded or raw PEM
+  const key = privateKey.includes('BEGIN') ? privateKey : Buffer.from(privateKey, 'base64').toString('utf-8');
+
+  const now = Math.floor(Date.now() / 1000);
+  const header = { alg: 'RS256', typ: 'JWT' };
+  const payload = {
+    iat: now - 60,      // issued 60s ago to account for clock drift
+    exp: now + 600,     // expires in 10 minutes
+    iss: appId,
+  };
+
+  const b64 = (obj: unknown) => Buffer.from(JSON.stringify(obj)).toString('base64url');
+  const unsigned = `${b64(header)}.${b64(payload)}`;
+
+  const sign = createSign('RSA-SHA256');
+  sign.update(unsigned);
+  const signature = sign.sign(key, 'base64url');
+
+  return `${unsigned}.${signature}`;
+}
+
+// Cache installation tokens (they last 1 hour)
+const tokenCache = new Map<string, { token: string; expiresAt: number }>();
+
+/**
+ * Get an installation access token for making API calls on behalf of the installation.
+ * Tokens are cached until 5 minutes before expiry.
+ */
+export async function getInstallationToken(installationId: string): Promise<string> {
+  const cached = tokenCache.get(installationId);
+  if (cached && cached.expiresAt > Date.now() + 5 * 60 * 1000) {
+    return cached.token;
+  }
+
+  const jwt = createAppJWT();
+  const res = await fetch(`https://api.github.com/app/installations/${installationId}/access_tokens`, {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${jwt}`,
+      Accept: 'application/vnd.github+json',
+      'X-GitHub-Api-Version': '2022-11-28',
+    },
+  });
+
+  if (!res.ok) {
+    const text = await res.text();
+    throw new Error(`Failed to get installation token (${res.status}): ${text}`);
+  }
+
+  const data = await res.json() as { token: string; expires_at: string };
+  tokenCache.set(installationId, {
+    token: data.token,
+    expiresAt: new Date(data.expires_at).getTime(),
+  });
+
+  return data.token;
+}
+
+/**
+ * Make an authenticated GitHub API request using an installation token.
+ */
+export async function githubApi(
+  installationId: string,
+  method: string,
+  path: string,
+  body?: unknown,
+): Promise<unknown> {
+  const token = await getInstallationToken(installationId);
+  const res = await fetch(`https://api.github.com${path}`, {
+    method,
+    headers: {
+      Authorization: `token ${token}`,
+      Accept: 'application/vnd.github+json',
+      'X-GitHub-Api-Version': '2022-11-28',
+      'Content-Type': 'application/json',
+    },
+    body: body ? JSON.stringify(body) : undefined,
+  });
+
+  if (!res.ok) {
+    const text = await res.text();
+    throw new Error(`GitHub API ${method} ${path} failed (${res.status}): ${text}`);
+  }
+
+  return res.json();
+}
+
+/**
+ * Get the list of files changed in a PR.
+ */
+export async function getPRFiles(
+  installationId: string,
+  owner: string,
+  repo: string,
+  prNumber: number,
+): Promise<Array<{ filename: string; status: string; additions: number; deletions: number }>> {
+  const data = await githubApi(
+    installationId,
+    'GET',
+    `/repos/${owner}/${repo}/pulls/${prNumber}/files`,
+  ) as Array<{ filename: string; status: string; additions: number; deletions: number }>;
+  return data;
+}
+
+/**
+ * Post a comment on a PR (via the issues API).
+ */
+export async function postPRComment(
+  installationId: string,
+  owner: string,
+  repo: string,
+  prNumber: number,
+  body: string,
+): Promise<void> {
+  await githubApi(
+    installationId,
+    'POST',
+    `/repos/${owner}/${repo}/issues/${prNumber}/comments`,
+    { body },
+  );
 }
