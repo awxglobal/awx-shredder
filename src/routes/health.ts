@@ -12,6 +12,7 @@
 
 import { Hono } from 'hono';
 import { calculateHealthScore } from '../lib/health-score.js';
+import { calculateMetrics } from '../lib/metrics-engine.js';
 import { analyzePR } from '../lib/pr-analysis.js';
 import type { AppEnv } from '../types.js';
 
@@ -70,6 +71,20 @@ healthRouter.get('/health/:projectId/terrain', async (c) => {
   } catch (err) {
     console.error('[health] Terrain check failed:', (err as Error).message);
     return c.json({ error: 'terrain_check_failed', message: (err as Error).message }, 500);
+  }
+});
+
+// ── Operational metrics ─────────────────────────────────────────────────────
+
+healthRouter.get('/metrics/:projectId', async (c) => {
+  const projectId = c.req.param('projectId');
+
+  try {
+    const metrics = await calculateMetrics(projectId);
+    return c.json(metrics);
+  } catch (err) {
+    console.error('[health] Metrics calculation failed:', (err as Error).message);
+    return c.json({ error: 'metrics_failed', message: (err as Error).message }, 500);
   }
 });
 
