@@ -139,6 +139,7 @@ function calculateRetryMetric(
   // Retry signal = files modified 3+ times in the same session-window (2h gaps)
   const earlyRetries = countRetrySignals(earlyEvents);
   const recentRetries = countRetrySignals(recentEvents);
+  const totalRetries = earlyRetries + recentRetries;
 
   const delta = earlyRetries > 0
     ? Math.round(((recentRetries - earlyRetries) / earlyRetries) * 100)
@@ -149,15 +150,16 @@ function calculateRetryMetric(
     value: countRetrySignals(allEvents.filter(e => e.timestamp >= w.start && e.timestamp < w.end)),
   }));
 
-  const totalRetries = earlyRetries + recentRetries;
+  // Show absolute count when no baseline, percentage when comparing
+  const hasBaseline = earlyRetries > 0;
 
   return {
     id: 'retry',
     title: 'Retry / loop reduction',
-    value: totalRetries === 0 ? '0' : `${Math.abs(delta)}%`,
-    previous: `${earlyRetries} loops`,
+    value: hasBaseline ? `${Math.abs(delta)}%` : String(totalRetries),
+    previous: hasBaseline ? `${earlyRetries} loops` : `${allEvents.length} file events`,
     delta,
-    unit: delta <= 0 ? 'fewer loops' : 'more loops',
+    unit: hasBaseline ? (delta <= 0 ? 'fewer loops' : 'more loops') : 'retry signals detected',
     pain: 'AI sessions stop circling the same failed fix.',
     evidence: `${totalRetries} retry signals across ${allEvents.length} file events`,
     trend,
@@ -190,6 +192,7 @@ function calculateReviewMetric(
     m.category === 'review_submitted' && isChangesRequested(m),
   ).length;
   const totalReviews = allMemories.filter(m => m.category === 'review_submitted').length;
+  const totalRewrites = earlyRewrites + recentRewrites;
 
   const delta = earlyRewrites > 0
     ? Math.round(((recentRewrites - earlyRewrites) / earlyRewrites) * 100)
@@ -204,15 +207,17 @@ function calculateReviewMetric(
     ).length,
   }));
 
+  const hasBaseline = earlyRewrites > 0;
+
   return {
     id: 'review',
     title: 'Reviewer rewrite reduction',
-    value: totalReviews === 0 ? '0' : `${Math.abs(delta)}%`,
-    previous: `${earlyRewrites} rewrites`,
+    value: hasBaseline ? `${Math.abs(delta)}%` : String(totalRewrites),
+    previous: hasBaseline ? `${earlyRewrites} rewrites` : `${totalReviews} reviews total`,
     delta,
-    unit: 'less reviewer rescue',
+    unit: hasBaseline ? 'less reviewer rescue' : 'changes requested',
     pain: 'Reviewers stop re-implementing agent output by hand.',
-    evidence: `${totalReviews} reviews, ${earlyRewrites + recentRewrites} with changes requested`,
+    evidence: `${totalReviews} reviews, ${totalRewrites} with changes requested`,
     trend,
   };
 }
@@ -233,6 +238,8 @@ function calculateCIMetric(
   const earlyFailures = earlyMemories.filter(m => m.category === 'ci_failed').length;
   const recentFailures = recentMemories.filter(m => m.category === 'ci_failed').length;
   const totalCI = allMemories.filter(m => m.category === 'ci_failed' || m.category === 'ci_passed').length;
+  const totalFailures = earlyFailures + recentFailures;
+  const totalPassed = allMemories.filter(m => m.category === 'ci_passed').length;
 
   const delta = earlyFailures > 0
     ? Math.round(((recentFailures - earlyFailures) / earlyFailures) * 100)
@@ -246,15 +253,19 @@ function calculateCIMetric(
     ).length,
   }));
 
+  const hasBaseline = earlyFailures > 0;
+  // Show pass rate when no baseline
+  const passRate = totalCI > 0 ? Math.round((totalPassed / totalCI) * 100) : 0;
+
   return {
     id: 'ci',
     title: 'CI failure reduction',
-    value: totalCI === 0 ? '0' : `${Math.abs(delta)}%`,
-    previous: `${earlyFailures} CI failures`,
-    delta,
-    unit: 'fewer failed runs',
+    value: hasBaseline ? `${Math.abs(delta)}%` : `${passRate}%`,
+    previous: hasBaseline ? `${earlyFailures} CI failures` : `${totalFailures} failures from ${totalCI} runs`,
+    delta: hasBaseline ? delta : -passRate,
+    unit: hasBaseline ? 'fewer failed runs' : 'CI pass rate',
     pain: 'Known failing checks get run before handoff.',
-    evidence: `${totalCI} CI events, ${earlyFailures + recentFailures} failures`,
+    evidence: `${totalCI} CI events, ${totalFailures} failures, ${totalPassed} passed`,
     trend,
   };
 }
@@ -267,13 +278,10 @@ function calculateExplorationMetric(
   allEvents: FileEventRow[],
   weeks: WeekBucket[],
 ): MetricResult {
-  // Count unique files read per period (read events = exploration)
-  const earlyExploration = new Set(earlyEvents.filter(e => e.eventType === 'read').map(e => e.filePath)).size;
-  const recentExploration = new Set(recentEvents.filter(e => e.eventType === 'read').map(e => e.filePath)).size;
-
-  // If no read events, count all unique files as exploration proxy
-  const earlyFiles = earlyExploration || new Set(earlyEvents.map(e => e.filePath)).size;
-  const recentFiles = recentExploration || new Set(recentEvents.map(e => e.filePath)).size;
+  // Count unique files per period (all events = exploration proxy)
+  const earlyFiles = new Set(earlyEvents.map(e => e.filePath)).size;
+  const recentFiles = new Set(recentEvents.map(e => e.filePath)).size;
+  const totalUniqueFiles = new Set(allEvents.map(e => e.filePath)).size;
 
   const delta = earlyFiles > 0
     ? Math.round(((recentFiles - earlyFiles) / earlyFiles) * 100)
@@ -287,15 +295,17 @@ function calculateExplorationMetric(
     };
   });
 
+  const hasBaseline = earlyFiles > 0;
+
   return {
     id: 'exploration',
     title: 'File exploration reduction',
-    value: earlyFiles + recentFiles === 0 ? '0' : `${Math.abs(delta)}%`,
-    previous: `${earlyFiles} files`,
+    value: hasBaseline ? `${Math.abs(delta)}%` : String(totalUniqueFiles),
+    previous: hasBaseline ? `${earlyFiles} files` : `${allEvents.length} total events`,
     delta,
-    unit: 'less repo wandering',
+    unit: hasBaseline ? 'less repo wandering' : 'unique files touched',
     pain: 'Agents start with evidence instead of broad scans.',
-    evidence: `${new Set(allEvents.map(e => e.filePath)).size} unique files across ${allEvents.length} events`,
+    evidence: `${totalUniqueFiles} unique files across ${allEvents.length} events`,
     trend,
   };
 }
@@ -310,24 +320,24 @@ function calculateRegressionMetric(
   // = same file broke twice = regression (or regression prevented if brain caught it)
   const bugFixes = allMemories.filter(m => m.category === 'bug_fix');
   const regressions = findRegressions(bugFixes);
+  const bugFiles = countUniqueFiles(bugFixes);
 
-  const trend = weeks.map(w => {
-    const weekBugs = bugFixes.filter(m => m.createdAt >= w.start && m.createdAt < w.end);
-    return {
-      week: w.label,
-      value: findRegressions(bugFixes.filter(m => m.createdAt < w.end)).length,
-    };
-  });
+  const trend = weeks.map(w => ({
+    week: w.label,
+    value: bugFixes.filter(m => m.createdAt >= w.start && m.createdAt < w.end).length,
+  }));
 
   return {
     id: 'regression',
     title: 'Repeated regression prevention',
-    value: String(regressions.length),
-    previous: `${bugFixes.length} bug fixes tracked`,
-    delta: regressions.length > 0 ? regressions.length * 100 : 0,
-    unit: 'repeat failures blocked',
+    value: bugFixes.length === 0 ? '0' : String(regressions.length > 0 ? regressions.length : bugFixes.length),
+    previous: regressions.length > 0
+      ? `${regressions.length} regressions caught`
+      : `${bugFixes.length} bug fixes tracked`,
+    delta: regressions.length > 0 ? regressions.length * 100 : bugFixes.length * 50,
+    unit: regressions.length > 0 ? 'repeat failures blocked' : 'bug fixes in brain memory',
     pain: 'The same bug stops returning across AI tools.',
-    evidence: `${regressions.length} regressions from ${bugFixes.length} bug fixes on ${countUniqueFiles(bugFixes)} files`,
+    evidence: `${bugFixes.length} bug fixes on ${bugFiles} files, ${regressions.length} regressions detected`,
     trend,
   };
 }
