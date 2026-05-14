@@ -148,13 +148,13 @@ APP_URL=               # Public base URL (e.g. https://your-domain.com)
 <!-- AWX_ARTICLES_START -->
 ## 📝 Recent Technical Articles
 
-*5 articles published — auto-updated daily*
+*6 articles published — auto-updated daily*
 
+- **Alerting on LLM cost thresholds: a developer's guide** — 
+- **How to build a drop-in OpenAI proxy in TypeScript** — 
 - **AutoGen cost management: how to stop agents spending too much** — 
 - **Building a cost-aware LangChain agent from scratch** — 
 - **Claude vs GPT-4o: cost per task comparison for autonomous agents** — 
-- **The true cost of GPT-4o in production: what the pricing page doesn't tell you** — 
-- **Spend analytics for AI APIs: what to track and why** — 
 
 > Articles published to [dev.to](https://dev.to/search?q=awx+shredder), [Hashnode](https://hashnode.com/search?q=awx+shredder), and [awx-shredder.fly.dev/blog](https://awx-shredder.fly.dev/blog)
 
